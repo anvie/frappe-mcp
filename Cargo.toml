@@ -14,3 +14,13 @@ serde_json = "1.0.143"
 tokio = { version = "1.47.1", features = ["full"] }
 walkdir = "2.5.0"
 anyhow = "1.0.99"
+rmcp = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "9349f5c", features = [
+  "server",
+  "transport-io",
+  "macros",
+] }
+regex = "1.11.1"
+tracing = "0.1.41"
+axum = "0.8.4"
+futures = "0.3.31"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }

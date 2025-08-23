@@ -10,30 +10,49 @@
 // is strictly forbidden unless prior written permission is obtained
 // from Nuwaira.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use walkdir::WalkDir;
 
-#[derive(Serialize)]
-struct Doctype {
-    name: String,
-    backend_file: String,
-    frontend_file: Option<String>,
-    module: String,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DocType {
+    pub name: String,
+    pub backend_file: String,
+    pub frontend_file: Option<String>,
+    pub meta_file: Option<String>,
+    pub module: String,
 }
 
-#[derive(Serialize)]
-struct Module {
-    name: String,
-    location: String,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Module {
+    pub name: String,
+    pub location: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Analysis {
-    doctypes: Vec<Doctype>,
+    doctypes: Vec<DocType>,
     modules: Vec<Module>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct AnalyzedData {
+    pub doctypes: Vec<DocType>,
+    pub modules: Vec<Module>,
+}
+
+impl AnalyzedData {
+    pub fn from_toml_str(toml_str: &str) -> Result<AnalyzedData, toml::de::Error> {
+        toml::from_str(toml_str)
+    }
+
+    pub fn from_file(file_path: &str) -> Result<AnalyzedData, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(file_path)?;
+        let data = Self::from_toml_str(&content)?;
+        Ok(data)
+    }
 }
 
 pub fn analyze_frappe_app(
@@ -91,8 +110,9 @@ pub fn analyze_frappe_app(
 
                         let backend_file = doctype_dir.join(format!("{}.py", &doctype_name));
                         let frontend_file = doctype_dir.join(format!("{}.js", &doctype_name));
+                        let meta_file = doctype_dir.join(format!("{}.json", &doctype_name));
 
-                        doctypes.push(Doctype {
+                        doctypes.push(DocType {
                             name: capitalize_words(&doctype_name),
                             backend_file: to_relative_path(
                                 &backend_file.to_string_lossy().to_string(),
@@ -102,6 +122,15 @@ pub fn analyze_frappe_app(
                             frontend_file: if frontend_file.exists() {
                                 Some(to_relative_path(
                                     &frontend_file.to_string_lossy().to_string(),
+                                    &root_sub_path.to_string_lossy().to_string(),
+                                    relative_path,
+                                ))
+                            } else {
+                                None
+                            },
+                            meta_file: if meta_file.exists() {
+                                Some(to_relative_path(
+                                    &meta_file.to_string_lossy().to_string(),
                                     &root_sub_path.to_string_lossy().to_string(),
                                     relative_path,
                                 ))
@@ -118,32 +147,34 @@ pub fn analyze_frappe_app(
 
     let analysis = Analysis { doctypes, modules };
 
-    // Serialize to TOML (exact structure: top-level doctypes/modules)
-    let mut toml_str = String::new();
-    toml_str.push_str("doctypes = [\n");
-    for d in &analysis.doctypes {
-        toml_str.push_str(&format!(
-            "  {{ name = \"{}\", backend_file = \"{}\", frontend_file = {}, module = \"{}\" }},\n",
-            d.name,
-            d.backend_file,
-            d.frontend_file
-                .as_ref()
-                .map(|s| format!("\"{}\"", s))
-                .unwrap_or("\"\"".to_string()),
-            d.module
-        ));
-    }
-    toml_str.push_str("]\n\n");
+    // // Serialize to TOML (exact structure: top-level doctypes/modules)
+    // let mut toml_str = String::new();
+    // toml_str.push_str("doctypes = [\n");
+    // for d in &analysis.doctypes {
+    //     toml_str.push_str(&format!(
+    //         "  {{ name = \"{}\", backend_file = \"{}\", frontend_file = {}, module = \"{}\" }},\n",
+    //         d.name,
+    //         d.backend_file,
+    //         d.frontend_file
+    //             .as_ref()
+    //             .map(|s| format!("\"{}\"", s))
+    //             .unwrap_or("\"\"".to_string()),
+    //         d.module
+    //     ));
+    // }
+    // toml_str.push_str("]\n\n");
+    //
+    // toml_str.push_str("modules = [\n");
+    // for m in &analysis.modules {
+    //     toml_str.push_str(&format!(
+    //         "  {{ name = \"{}\", location = \"{}\" }},\n",
+    //         m.name, m.location
+    //     ));
+    // }
+    // toml_str.push_str("]\n");
+    //
 
-    toml_str.push_str("modules = [\n");
-    for m in &analysis.modules {
-        toml_str.push_str(&format!(
-            "  {{ name = \"{}\", location = \"{}\" }},\n",
-            m.name, m.location
-        ));
-    }
-    toml_str.push_str("]\n");
-
+    let toml_str = toml::to_string(&analysis)?;
     fs::write(output_file, toml_str)?;
 
     Ok(())
