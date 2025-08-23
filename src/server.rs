@@ -167,7 +167,8 @@ impl ProjectExplorer {
         Ok(CallToolResult::success(vec![Content::text(out)]))
     }
 
-    /// get_function_signature: naive regex for Rust/TS/JS/Python
+    /// get_function_signature: get function signature from project code files by name,
+    /// optionally within a specific module or including built-in Frappe modules.
     #[tool(description = "Try to extract a function signature from source files")]
     fn get_function_signature(
         &self,
