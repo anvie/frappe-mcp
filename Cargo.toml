@@ -1,0 +1,16 @@
+[package]
+authors = ["Robin Syihab <robin@syihab.st>"]
+edition = "2018"
+name = "frappe_mcp"
+version = "0.0.1"
+
+[dependencies]
+
+clap = { version = "4.0.13", features = ["derive"] }
+dotenv = "0.15.0"
+toml = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.143"
+tokio = { version = "1.47.1", features = ["full"] }
+walkdir = "2.5.0"
+anyhow = "1.0.99"
