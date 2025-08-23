@@ -32,22 +32,6 @@ struct Args {
     #[arg(short, long, default_value = "default.conf")]
     config: String,
 
-    #[arg(
-        short,
-        long,
-        default_value = "",
-        help = "analyze the codebase and output a toml file"
-    )]
-    analyze: String,
-
-    #[arg(
-        short,
-        long,
-        default_value = "appname",
-        help = "relative path from root"
-    )]
-    relative_path: String,
-
     #[command(subcommand)]
     command: CommandEnum,
 }
@@ -55,7 +39,25 @@ struct Args {
 /// Enum of subcommands
 #[derive(Subcommand, Debug)]
 enum CommandEnum {
-    /// Run the application
+    /// Analyze the codebase and output a analyzed_output.toml file.
+    Analyze {
+        #[arg(
+            short,
+            long,
+            default_value = "",
+            help = "Directory/codebase to analyze"
+        )]
+        app_dir: String,
+
+        #[arg(
+            short,
+            long,
+            default_value = "appname",
+            help = "relative path from root"
+        )]
+        relative_path: String,
+    },
+    /// Run the MCP server
     Run,
     /// Print version info
     Version,
@@ -80,18 +82,31 @@ async fn main() {
 
     let (args, config) = parse_args();
 
-    if !args.analyze.is_empty() {
-        // Perform analysis and output to the specified file
-        let output = "analyzed_output.toml";
-        if let Err(e) = analyze::analyze_frappe_app(&args.analyze, &args.relative_path, output) {
-            eprintln!("Analysis error: {}", e);
-            exit(1);
-        }
-        println!("Analysis completed. Output written to {}", output);
-        exit(0);
-    }
+    // if !args.analyze.is_empty() {
+    //     // Perform analysis and output to the specified file
+    //     let output = "analyzed_output.toml";
+    //     if let Err(e) = analyze::analyze_frappe_app(&args.analyze, &args.relative_path, output) {
+    //         eprintln!("Analysis error: {}", e);
+    //         exit(1);
+    //     }
+    //     println!("Analysis completed. Output written to {}", output);
+    //     exit(0);
+    // }
 
     match args.command {
+        CommandEnum::Analyze {
+            app_dir,
+            relative_path,
+        } => {
+            // Perform analysis and output to the specified file
+            let output = "analyzed_output.toml";
+            if let Err(e) = analyze::analyze_frappe_app(&app_dir, &relative_path, output) {
+                eprintln!("Analysis error: {}", e);
+                exit(1);
+            }
+            println!("Analysis completed. Output written to {}", output);
+            exit(1);
+        }
         CommandEnum::Run => {}
         CommandEnum::Version => {
             println!("Version 0.0.1");

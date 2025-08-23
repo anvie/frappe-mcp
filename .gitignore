@@ -5,3 +5,4 @@
 .env-prod
 .env-stage
 
+analyzed_output.toml
