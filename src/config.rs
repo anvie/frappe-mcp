@@ -10,6 +10,9 @@ pub struct Config {
 
     #[serde(default)]
     pub app_absolute_path: String,
+
+    #[serde(default)]
+    pub site: String,
 }
 
 impl Config {
@@ -23,6 +26,9 @@ impl Config {
             "{}/apps/{}",
             config.frappe_bench_dir, config.app_relative_path
         );
+        if config.site.is_empty() {
+            config.site = "frontend".to_string();
+        }
         Ok(config)
     }
 }

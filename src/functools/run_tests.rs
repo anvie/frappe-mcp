@@ -4,6 +4,7 @@ use std::process::Command;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
+use crate::stringutil::to_snakec;
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -19,18 +20,24 @@ pub fn run_tests(
     // Verify we're in a Frappe bench directory
     let bench_path = find_bench_root(&config.frappe_bench_dir)?;
 
-    let mut cmd_args: Vec<String> = vec!["run-tests".to_string()];
+    let mut cmd_args: Vec<String> = vec![];
+
+    let app_name_snake = to_snakec(&config.app_name);
+    let snake_doctype = to_snakec(doctype.as_deref().unwrap_or(""));
+
+    cmd_args.push("--site".to_string());
+    cmd_args.push(config.site.clone());
+    cmd_args.push("run-tests".to_string());
 
     // Build command arguments based on parameters
     match (module.as_ref(), doctype.as_ref()) {
         (Some(m), Some(d)) => {
             // Test specific doctype in specific module
-            let snake_doctype = d.replace(' ', "_").to_lowercase();
             let test_path = format!(
                 "--app {} --module {}.{}.doctype.{}.test_{}",
-                &config.app_name,
-                &config.app_name,
-                m.to_lowercase(),
+                &app_name_snake,
+                &app_name_snake,
+                to_snakec(m),
                 snake_doctype,
                 snake_doctype
             );
@@ -46,9 +53,9 @@ pub fn run_tests(
             // Test all doctypes in specific module
             let module_path = format!(
                 "--app {} --module {}.{}",
-                &config.app_name,
-                &config.app_name,
-                m.to_lowercase()
+                &app_name_snake,
+                &app_name_snake,
+                to_snakec(m),
             );
             let module_args: Vec<String> = module_path
                 .split_whitespace()
@@ -64,9 +71,9 @@ pub fn run_tests(
                 let snake_doctype = d.replace(' ', "_").to_lowercase();
                 let test_path = format!(
                     "--app {} --module {}.{}.doctype.{}.test_{}",
-                    &config.app_name,
-                    &config.app_name,
-                    found_module.to_lowercase(),
+                    &app_name_snake,
+                    &app_name_snake,
+                    to_snakec(&found_module),
                     snake_doctype,
                     snake_doctype
                 );
@@ -107,8 +114,9 @@ pub fn run_tests(
     //     }
     // }
 
-    // // Add coverage flag
-    // cmd_args.push("--coverage".to_string());
+    if cmd_args.len() > 1 {
+        tracing::debug!("Executing bench command: bench {}", cmd_args.join(" "));
+    }
 
     // Execute bench command
     let output = Command::new("bench")
@@ -168,7 +176,10 @@ pub fn run_tests(
         }
         Err(e) => {
             mcp_return!(format!(
-                "Failed to execute bench command: {}\n\nMake sure:\n1. You're in a Frappe bench directory\n2. 'bench' command is available in PATH\n3. The app is installed in the bench",
+                "Failed to execute bench command: `bench {}`\n\n\
+                Error: {}\n\n\
+                \n\nMake sure:\n1. You're in a Frappe bench directory\n2. 'bench' command is available in PATH\n3. The app is installed in the bench",
+                cmd_args.join(" "),
                 e
             ));
         }
@@ -177,6 +188,10 @@ pub fn run_tests(
 
 fn find_bench_root(app_path: &str) -> Result<String, McpError> {
     let mut current = Path::new(app_path);
+
+    if current.join("sites").exists() && current.join("apps").exists() {
+        return Ok(current.to_string_lossy().to_string());
+    }
 
     // Look for bench indicators going up the directory tree
     while let Some(parent) = current.parent() {
