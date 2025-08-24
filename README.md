@@ -29,7 +29,7 @@ A Model Context Protocol (MCP) server designed to help AI agents understand and 
 1. Clone and build:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/anvie/frappe-mcp.git
 cd frappe-mcp
 cargo build --release
 ```
