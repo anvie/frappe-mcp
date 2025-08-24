@@ -117,8 +117,26 @@ pub fn analyze_frappe_app(
                         let frontend_file = doctype_dir.join(format!("{}.js", &doctype_name));
                         let meta_file = doctype_dir.join(format!("{}.json", &doctype_name));
 
+                        if !meta_file.exists() {
+                            continue;
+                        }
+
+                        // get real doctype name by regex match in meta_file, looking for
+                        // text like: `"name": "SHU Period"`
+                        let meta_content = fs::read_to_string(&meta_file)?;
+                        let real_doctype_name = if let Some(caps) =
+                            regex::Regex::new(r#""name"\s*:\s*"([^"]+)""#)
+                                .unwrap()
+                                .captures(&meta_content)
+                        {
+                            caps.get(1)
+                                .map_or(doctype_name.clone(), |m| m.as_str().to_string())
+                        } else {
+                            capitalize_words(&doctype_name)
+                        };
+
                         doctypes.push(DocType {
-                            name: capitalize_words(&doctype_name),
+                            name: real_doctype_name,
                             backend_file: to_relative_path(
                                 &backend_file.to_string_lossy().to_string(),
                                 &root_sub_path.to_string_lossy().to_string(),

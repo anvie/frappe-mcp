@@ -401,7 +401,14 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
     tracing::debug!("Load analyzed data: anazyled_output.toml");
     let anal = AnalyzedData::from_file("analyzed_output.toml")
         .map(|data| {
-            tracing::debug!("Analyzed Data: {:#?}", data);
+            tracing::debug!(
+                "Analyzed Data:\n\
+                 + {} modules\n\
+                 + {} doctypes\n\
+                ",
+                data.modules.len(),
+                data.doctypes.len()
+            );
             data
         })
         .unwrap_or_else(|e| {

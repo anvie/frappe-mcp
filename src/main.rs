@@ -21,7 +21,6 @@ mod functools;
 mod server;
 mod stringutil;
 
-use crate::stringutil::to_snakec;
 use config::Config;
 
 #[derive(Parser, Debug)]
@@ -29,7 +28,7 @@ use config::Config;
 #[command(about = "MCP server for helping Agentic AI coding in Frappe environment")]
 #[command(author, version, long_about=None)]
 struct Args {
-    #[arg(short, long, default_value = "default.conf")]
+    #[arg(short, long, default_value = "frappe-mcp.conf")]
     config: String,
 
     #[command(subcommand)]

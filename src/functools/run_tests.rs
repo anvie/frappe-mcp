@@ -17,7 +17,7 @@ pub fn run_tests(
     let app_path = &config.app_absolute_path;
 
     // Verify we're in a Frappe bench directory
-    let bench_path = find_bench_root(app_path)?;
+    let bench_path = find_bench_root(&config.frappe_bench_dir)?;
 
     let mut cmd_args: Vec<String> = vec!["run-tests".to_string()];
 
