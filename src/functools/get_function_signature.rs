@@ -4,10 +4,7 @@ use std::path::Path;
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
 use crate::fileutil::match_func_signature_in_file;
-use rmcp::{
-    model::*,
-    ErrorData as McpError,
-};
+use rmcp::{model::*, ErrorData as McpError};
 use serde_json::json;
 use walkdir::WalkDir;
 

@@ -36,7 +36,7 @@ pub struct FindSymbolsArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fuzzy: Option<bool>,
 
-    /// Maximum number of matches to return (default 200)
+    /// Maximum number of matches to return (default 5)
     #[serde(default)]
     pub limit: Option<usize>,
 }
@@ -112,8 +112,14 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<FindSymbolsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        // TODO: implement this
-        mcp_return!("")
+        functools::find_symbols(
+            &self.config,
+            &self.anal,
+            &args.name,
+            args.search_in,
+            args.fuzzy,
+            args.limit,
+        )
     }
 
     /// get_function_signature: get function signature from project code files by name,

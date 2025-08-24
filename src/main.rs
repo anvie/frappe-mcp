@@ -76,8 +76,6 @@ fn parse_args() -> (Args, Config) {
 
 #[tokio::main]
 async fn main() {
-    
-
     let (args, config) = parse_args();
 
     match args.command {
