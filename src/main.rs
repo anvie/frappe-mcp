@@ -18,6 +18,7 @@ mod analyze;
 mod config;
 mod fileutil;
 mod functools;
+mod refs_finder;
 mod server;
 mod stringutil;
 

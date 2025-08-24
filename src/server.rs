@@ -480,6 +480,7 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
             AnalyzedData {
                 doctypes: Vec::new(),
                 modules: Vec::new(),
+                symbol_refs: None,
             }
         });
     tracing::info!("Starting MCP server");

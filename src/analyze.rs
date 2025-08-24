@@ -10,7 +10,11 @@
 // is strictly forbidden unless prior written permission is obtained
 // from Nuwaira.
 
+use crate::refs_finder::{
+    analyze_frappe_field_usage, DoctypeUsage, Output as RefsFinderOutput, Stats,
+};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -29,17 +33,38 @@ pub struct Module {
     pub name: String,
     pub location: String,
 }
+//
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub struct RefLocation {
+//     pub file: String,
+//     pub line: usize,
+//     pub var: String,
+//     pub kind: String, // e.g., "attr" | "subscript" | "get" | "set" | "append" | "get_value" | "inline"
+// }
+//
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub struct DoctypeRefs {
+//     pub fields: BTreeMap<String, Vec<RefLocation>>,
+// }
+//
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub struct SymbolRefs {
+//     pub doctypes: BTreeMap<String, DoctypeRefs>,
+//     pub unknown: BTreeMap<String, BTreeMap<String, Vec<RefLocation>>>,
+// }
 
 #[derive(Serialize, Deserialize)]
 struct Analysis {
     doctypes: Vec<DocType>,
     modules: Vec<Module>,
+    symbol_refs: Option<RefsFinderOutput>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct AnalyzedData {
     pub doctypes: Vec<DocType>,
     pub modules: Vec<Module>,
+    pub symbol_refs: Option<RefsFinderOutput>,
 }
 
 impl AnalyzedData {
@@ -168,34 +193,12 @@ pub fn analyze_frappe_app(
         }
     }
 
-    let analysis = Analysis { doctypes, modules };
-
-    // // Serialize to TOML (exact structure: top-level doctypes/modules)
-    // let mut toml_str = String::new();
-    // toml_str.push_str("doctypes = [\n");
-    // for d in &analysis.doctypes {
-    //     toml_str.push_str(&format!(
-    //         "  {{ name = \"{}\", backend_file = \"{}\", frontend_file = {}, module = \"{}\" }},\n",
-    //         d.name,
-    //         d.backend_file,
-    //         d.frontend_file
-    //             .as_ref()
-    //             .map(|s| format!("\"{}\"", s))
-    //             .unwrap_or("\"\"".to_string()),
-    //         d.module
-    //     ));
-    // }
-    // toml_str.push_str("]\n\n");
-    //
-    // toml_str.push_str("modules = [\n");
-    // for m in &analysis.modules {
-    //     toml_str.push_str(&format!(
-    //         "  {{ name = \"{}\", location = \"{}\" }},\n",
-    //         m.name, m.location
-    //     ));
-    // }
-    // toml_str.push_str("]\n");
-    //
+    let symbol_refs = analyze_frappe_field_usage(&root_path.to_string_lossy().to_string());
+    let analysis = Analysis {
+        doctypes,
+        modules,
+        symbol_refs: symbol_refs.ok(),
+    };
 
     let toml_str = toml::to_string(&analysis)?;
     fs::write(output_file, toml_str)?;
