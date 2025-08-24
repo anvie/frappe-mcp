@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::fileutil::to_snakec;
+use crate::stringutil::to_snakec;
 use rmcp::{model::*, ErrorData as McpError};
 use walkdir::WalkDir;
 

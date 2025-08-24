@@ -66,6 +66,64 @@ pub struct GetDoctypeArgs {
     pub metadata_only: Option<bool>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct CreateDoctypeTemplateArgs {
+    /// DocType name (e.g., "Task")
+    pub name: String,
+
+    /// Target module name (e.g., "Projects")
+    pub module: String,
+
+    /// Optional field definitions for the DocType
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fields: Option<Vec<FieldDefinition>>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema, Clone)]
+pub struct FieldDefinition {
+    /// Field name (snake_case)
+    pub fieldname: String,
+
+    /// Field type (e.g., "Data", "Text", "Link", "Select")
+    pub fieldtype: String,
+
+    /// Field label for display
+    pub label: String,
+
+    /// Whether field is required
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reqd: Option<bool>,
+
+    /// Options for Select/Link fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub options: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct RunTestsArgs {
+    /// Specific module to test (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<String>,
+
+    /// Specific DocType to test (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub doctype: Option<String>,
+
+    /// Test type: unit, integration, or all (default: unit)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test_type: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct AnalyzeLinksArgs {
+    /// DocType name to analyze relationships for
+    pub doctype: String,
+
+    /// Maximum depth for relationship traversal (default: 2)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub depth: Option<usize>,
+}
+
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ExamplePromptArgs {
     /// A message to put in the prompt
@@ -152,6 +210,56 @@ impl ProjectExplorer {
         )
     }
 
+    /// create_doctype_template: Generate boilerplate DocType structure
+    #[tool(description = "Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files")]
+    fn create_doctype_template(
+        &self,
+        Parameters(args): Parameters<CreateDoctypeTemplateArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::create_doctype_template(
+            &self.config,
+            &self.anal,
+            &args.name,
+            &args.module,
+            args.fields.map(|fields| fields.into_iter().map(|f| functools::FieldDefinition {
+                fieldname: f.fieldname,
+                fieldtype: f.fieldtype,
+                label: f.label,
+                reqd: f.reqd,
+                options: f.options,
+            }).collect()),
+        )
+    }
+
+    /// run_tests: Execute unit tests for specific modules or doctypes
+    #[tool(description = "Execute unit tests for specific modules, DocTypes, or entire app using bench run-tests")]
+    fn run_tests(
+        &self,
+        Parameters(args): Parameters<RunTestsArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::run_tests(
+            &self.config,
+            &self.anal,
+            args.module,
+            args.doctype,
+            args.test_type,
+        )
+    }
+
+    /// analyze_links: Map relationships between DocTypes
+    #[tool(description = "Analyze and map relationships between DocTypes by examining Link, Table, and Select fields")]
+    fn analyze_links(
+        &self,
+        Parameters(args): Parameters<AnalyzeLinksArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::analyze_links(
+            &self.config,
+            &self.anal,
+            &args.doctype,
+            args.depth,
+        )
+    }
+
     /// Simple echo (handy for debugging)
     #[tool(description = "Echo back provided JSON params")]
     fn echo(&self, Parameters(object): Parameters<JsonObject>) -> Result<CallToolResult, McpError> {
@@ -194,7 +302,7 @@ impl ServerHandler for ProjectExplorer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, echo. Prompt: example_prompt."
+                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, create_doctype_template, run_tests, analyze_links, echo. Prompt: example_prompt."
                     .to_string(),
             ),
         }
@@ -235,7 +343,10 @@ impl ServerHandler for ProjectExplorer {
                     Use tools:\n\
                     - find_symbols { name, search_in?, fuzzy?, limit? }\n\
                     - get_function_signature { name, module?, builtin? }\n\
-                    - get_doctype { name, metadata_only? }
+                    - get_doctype { name, metadata_only? }\n\
+                    - create_doctype_template { name, module, fields? }\n\
+                    - run_tests { module?, doctype?, test_type? }\n\
+                    - analyze_links { doctype, depth? }
                 ";
                 Ok(ReadResourceResult {
                     contents: vec![ResourceContents::text(memo, uri)],
@@ -335,6 +446,9 @@ mod tests {
         assert!(r.has_route("find_symbols"));
         assert!(r.has_route("get_function_signature"));
         assert!(r.has_route("get_doctype"));
+        assert!(r.has_route("create_doctype_template"));
+        assert!(r.has_route("run_tests"));
+        assert!(r.has_route("analyze_links"));
         assert!(r.has_route("echo"));
     }
 

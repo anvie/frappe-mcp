@@ -19,6 +19,7 @@ mod config;
 mod fileutil;
 mod functools;
 mod server;
+mod stringutil;
 
 use config::Config;
 
