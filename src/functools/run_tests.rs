@@ -14,7 +14,7 @@ pub fn run_tests(
     module: Option<String>,
     doctype: Option<String>,
 ) -> McpResult {
-    let app_path = &config.app_absolute_path;
+    // let app_path = &config.app_absolute_path;
 
     // Verify we're in a Frappe bench directory
     let bench_path = find_bench_root(&config.frappe_bench_dir)?;

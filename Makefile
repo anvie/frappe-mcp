@@ -18,11 +18,11 @@ clean:
 
 build-linux-amd64:
 	@@echo Building for Linux AMD64...
-	@@cargo build --release --target x86_64-unknown-linux-gnu
+	@@cargo zigbuild --target amd64-unknown-linux-gnu --release
 
 build-linux-arm64:
 	@@echo Building for Linux ARM64...
-	@@cargo build --release --target aarch64-unknown-linux-gnu
+	@@cargo zigbuild --target aarch64-unknown-linux-gnu --release
 
 .PHONY: clean fmt build-linux-amd64 build-linux-arm64
 

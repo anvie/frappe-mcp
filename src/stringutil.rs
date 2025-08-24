@@ -33,7 +33,7 @@ pub fn to_snakec(name: &str) -> String {
 /// - Kapitalisasi setiap kata (CapWords)
 /// - Prefix "_" bila hasil diawali digit
 /// - Kembalikan "_" bila tidak ada karakter alfanumerik
-pub fn to_camelc(input: &str) -> String {
+pub fn to_pascalc(input: &str) -> String {
     // Kumpulkan kata-kata yang berisi alfanumerik (Unicode-aware)
     let mut words: Vec<String> = Vec::new();
     let mut cur = String::new();
@@ -55,17 +55,33 @@ pub fn to_camelc(input: &str) -> String {
         return "_".to_string();
     }
 
-    // CapWords: huruf pertama Upper, sisanya lower (Unicode-aware)
+    // // CapWords: huruf pertama Upper, sisanya lower (Unicode-aware)
+    // let mut camel = String::new();
+    // for w in words {
+    //     let mut it = w.chars();
+    //     if let Some(first) = it.next() {
+    //         for up in first.to_uppercase() {
+    //             camel.push(up);
+    //         }
+    //         for c in it.flat_map(|c| c.to_lowercase()) {
+    //             camel.push(c);
+    //         }
+    //     }
+    // }
     let mut camel = String::new();
     for w in words {
         let mut it = w.chars();
         if let Some(first) = it.next() {
-            for up in first.to_uppercase() {
-                camel.push(up);
+            // Hanya naikkan huruf pertama kalau lowercase
+            if first.is_lowercase() {
+                for up in first.to_uppercase() {
+                    camel.push(up);
+                }
+            } else {
+                camel.push(first);
             }
-            for c in it.flat_map(|c| c.to_lowercase()) {
-                camel.push(c);
-            }
+            // Sisanya: biarkan seperti aslinya (tanpa force lowercase)
+            camel.extend(it);
         }
     }
 
@@ -106,38 +122,45 @@ mod tests {
 
     #[test]
     fn basic_spaces() {
-        assert_eq!(to_camelc("hello world"), "HelloWorld");
+        assert_eq!(to_pascalc("hello world"), "HelloWorld");
     }
 
     #[test]
     fn underscores_and_punct() {
-        assert_eq!(to_camelc("user_profile"), "UserProfile");
-        assert_eq!(to_camelc("user-profile  v2"), "UserProfileV2");
+        assert_eq!(to_pascalc("user_profile"), "UserProfile");
+        assert_eq!(to_pascalc("user-profile  v2"), "UserProfileV2");
     }
 
     #[test]
     fn leading_digits_make_prefix() {
-        assert_eq!(to_camelc("123 cats"), "_123Cats");
-        assert_eq!(to_camelc("9_lives"), "_9Lives");
+        assert_eq!(to_pascalc("123 cats"), "_123Cats");
+        assert_eq!(to_pascalc("9_lives"), "_9Lives");
     }
 
     #[test]
     fn unicode_letters() {
         // Python 3 mengizinkan identifier Unicode; ini tetap dipertahankan.
-        assert_eq!(to_camelc("spécial chärs"), "SpécialChärs");
-        assert_eq!(to_camelc("日本 語_クラス"), "日本語クラス");
+        assert_eq!(to_pascalc("spécial chärs"), "SpécialChärs");
+        assert_eq!(to_pascalc("日本 語_クラス"), "日本語クラス");
     }
 
     #[test]
     fn empty_or_symbols_only() {
-        assert_eq!(to_camelc(""), "_");
-        assert_eq!(to_camelc("?!@#$"), "_");
+        assert_eq!(to_pascalc(""), "_");
+        assert_eq!(to_pascalc("?!@#$"), "_");
     }
 
     #[test]
     fn already_camelish() {
-        assert_eq!(to_camelc("AlreadyCamelCase"), "Alreadycamelcase");
-        // Per desain, kata kedua dan seterusnya dilowercase lalu digabung:
-        // hasil masih CapWords yang valid untuk Python.
+        assert_eq!(to_pascalc("AlreadyCamelCase"), "AlreadyCamelCase");
+    }
+
+    #[test]
+    fn uppercase_handling() {
+        assert_eq!(to_pascalc("SHU Policy"), "SHUPolicy");
+        assert_eq!(to_pascalc("school project"), "SchoolProject");
+        assert_eq!(to_pascalc("123abc"), "_123abc");
+        assert_eq!(to_pascalc("hello_world"), "HelloWorld");
+        assert_eq!(to_pascalc("alreadyCamel"), "AlreadyCamel");
     }
 }

@@ -6,10 +6,18 @@ use std::path::Path;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::stringutil::{to_camelc, to_snakec};
+use crate::stringutil::{to_pascalc, to_snakec};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DoctypeSettings {
+    pub is_table: bool,
+    pub is_tree: bool,
+    pub is_single: bool,
+    pub is_submittable: bool,
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct FieldDefinition {
@@ -26,9 +34,10 @@ pub fn create_doctype_template(
     name: &str,
     module: &str,
     fields: Option<Vec<FieldDefinition>>,
+    settings: Option<DoctypeSettings>,
 ) -> McpResult {
     let snake_name = to_snakec(name);
-    let camel_name = to_camelc(name);
+    let camel_name = to_pascalc(name);
     let doctype_dir = format!(
         "{}/{}/{}/doctype/{}",
         config.app_absolute_path,
@@ -55,7 +64,13 @@ pub fn create_doctype_template(
     let fields = fields.unwrap_or_default();
 
     // 1. Create JSON metadata file
-    let json_content = create_json_metadata(name, &fields);
+    let settings = DoctypeSettings {
+        is_table: settings.as_ref().map_or(false, |s| s.is_table),
+        is_tree: settings.as_ref().map_or(false, |s| s.is_tree),
+        is_single: settings.as_ref().map_or(false, |s| s.is_single),
+        is_submittable: settings.as_ref().map_or(false, |s| s.is_submittable),
+    };
+    let json_content = create_json_metadata(name, &fields, &module, &settings);
     let json_path = format!("{}/{}.json", doctype_dir, snake_name);
     if let Err(e) = fs::write(&json_path, json_content) {
         mcp_return!(format!("Failed to write JSON file: {}", e));
@@ -99,7 +114,12 @@ fn get_current_year() -> i32 {
     Utc::now().year()
 }
 
-fn create_json_metadata(name: &str, fields: &[FieldDefinition]) -> String {
+fn create_json_metadata(
+    name: &str,
+    fields: &[FieldDefinition],
+    module_name: &str,
+    settings: &DoctypeSettings,
+) -> String {
     let mut default_fields = vec![FieldDefinition {
         fieldname: "naming_series".to_string(),
         fieldtype: "Select".to_string(),
@@ -133,14 +153,14 @@ fn create_json_metadata(name: &str, fields: &[FieldDefinition]) -> String {
         "icon": "fa fa-file-text",
         "idx": 0,
         "in_create": false,
-        "is_submittable": false,
-        "is_tree": false,
-        "issingle": false,
-        "istable": false,
+        "is_submittable": settings.is_submittable,
+        "is_tree": settings.is_tree,
+        "issingle": settings.is_single,
+        "istable": settings.is_table,
         "max_attachments": 0,
         "modified": format!("{}-01-01 00:00:00.000000", get_current_year()),
         "modified_by": "Administrator",
-        "module": name,
+        "module": module_name,
         "name": name,
         "naming_rule": "By \"Naming Series\" field",
         "owner": "Administrator",

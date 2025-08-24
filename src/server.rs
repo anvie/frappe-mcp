@@ -67,6 +67,21 @@ pub struct GetDoctypeArgs {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct DoctypeSettings {
+    /// Whether the DocType is a single instance (default: false)
+    pub is_single: Option<bool>,
+
+    /// Whether the DocType is a tree structure (default: false)
+    pub is_tree: Option<bool>,
+
+    /// Whether the DocType is submittable (default: false)
+    pub is_submittable: Option<bool>,
+
+    /// Whether the DocType is a child table (default: false)
+    pub is_child_table: Option<bool>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CreateDoctypeTemplateArgs {
     /// DocType name (e.g., "Task")
     pub name: String,
@@ -77,6 +92,10 @@ pub struct CreateDoctypeTemplateArgs {
     /// Optional field definitions for the DocType
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<FieldDefinition>>,
+
+    /// Optional settings for the DocType
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub settings: Option<DoctypeSettings>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema, Clone)]
@@ -230,6 +249,12 @@ impl ProjectExplorer {
                         options: f.options,
                     })
                     .collect()
+            }),
+            args.settings.map(|s| functools::DoctypeSettings {
+                is_single: s.is_single.unwrap_or(false),
+                is_tree: s.is_tree.unwrap_or(false),
+                is_submittable: s.is_submittable.unwrap_or(false),
+                is_table: s.is_child_table.unwrap_or(false),
             }),
         )
     }
