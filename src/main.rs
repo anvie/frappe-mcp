@@ -10,16 +10,14 @@
 // is strictly forbidden unless prior written permission is obtained
 // from Nuwaira.
 use clap::{Parser, Subcommand};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::io::{self, Write};
-use std::{fs, io::ErrorKind, process::exit};
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::sync::mpsc;
+use std::process::exit;
 
+#[macro_use]
+mod macros;
 mod analyze;
 mod config;
 mod fileutil;
+mod functools;
 mod server;
 
 use config::Config;
@@ -78,20 +76,9 @@ fn parse_args() -> (Args, Config) {
 
 #[tokio::main]
 async fn main() {
-    use tokio::io::AsyncReadExt;
+    
 
     let (args, config) = parse_args();
-
-    // if !args.analyze.is_empty() {
-    //     // Perform analysis and output to the specified file
-    //     let output = "analyzed_output.toml";
-    //     if let Err(e) = analyze::analyze_frappe_app(&args.analyze, &args.relative_path, output) {
-    //         eprintln!("Analysis error: {}", e);
-    //         exit(1);
-    //     }
-    //     println!("Analysis completed. Output written to {}", output);
-    //     exit(0);
-    // }
 
     match args.command {
         CommandEnum::Analyze {

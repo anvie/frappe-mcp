@@ -1,10 +1,9 @@
 #![allow(dead_code)]
-use std::{fs, io::BufRead, path::Path, sync::Arc};
+use std::{fs, io::BufRead, sync::Arc};
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::fileutil::{match_func_signature_in_file, to_pyname};
-use regex::Regex;
+use crate::functools;
 use rmcp::{
     handler::server::{router::prompt::PromptRouter, tool::ToolRouter, wrapper::Parameters},
     model::*,
@@ -19,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::Mutex;
 use tracing_subscriber::EnvFilter;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 // -----------------------------
 // Args / DTOs
@@ -164,221 +163,38 @@ impl ProjectExplorer {
             )
         };
 
-        Ok(CallToolResult::success(vec![Content::text(out)]))
+        mcp_return!(out)
     }
 
     /// get_function_signature: get function signature from project code files by name,
     /// optionally within a specific module or including built-in Frappe modules.
-    #[tool(description = "Try to extract a function signature from source files")]
+    #[tool(description = "Try to extract a function signature from project source files")]
     fn get_function_signature(
         &self,
         Parameters(args): Parameters<GetFunctionSignatureArgs>,
     ) -> Result<CallToolResult, McpError> {
-        let name = args.name;
-        let module = args.module.unwrap_or_default();
-        let builtin = args.builtin.unwrap_or(false);
-
-        let exts = vec!["py", "js"];
-
-        let mut matches = Vec::new();
-
-        if module != "" {
-            let f_mod = self
-                .anal
-                .modules
-                .iter()
-                .find(|m| m.name == module)
-                .ok_or_else(|| {
-                    McpError::invalid_request("module_not_found", Some(json!({ "module": module })))
-                })?;
-            let candidate = format!("{}/{}", self.config.app_absolute_path, f_mod.location);
-            tracing::info!("Searching in module path: {}", candidate);
-
-            if Path::new(&candidate).exists() && Path::new(&candidate).is_dir() {
-                for entry in WalkDir::new(&candidate).into_iter().filter_map(|e| e.ok()) {
-                    if !entry.file_type().is_file() {
-                        continue;
-                    }
-                    if let Some(ext) = entry.path().extension().and_then(|e| e.to_str()) {
-                        if !exts.iter().any(|x| x == &ext) {
-                            continue;
-                        }
-                    } else {
-                        continue;
-                    }
-                    if !match_func_signature_in_file(&name, &entry, &mut matches)? {
-                        continue;
-                    }
-                    if matches.len() > 2 {
-                        break;
-                    }
-                }
-            } else {
-                let out = format!(
-                    "Module path '{}' does not exist or is not a directory",
-                    candidate
-                );
-                return Ok(CallToolResult::success(vec![Content::text(out)]));
-            }
-        }
-
-        if builtin {
-            for entry in WalkDir::new(&format!("{}/apps/frappe", self.config.frappe_bench_dir))
-                .into_iter()
-                .filter_map(|e| e.ok())
-            {
-                if !entry.file_type().is_file() {
-                    continue;
-                }
-                if let Some(ext) = entry.path().extension().and_then(|e| e.to_str()) {
-                    if !exts.iter().any(|x| x == &ext) {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-                if !match_func_signature_in_file(&name, &entry, &mut matches)? {
-                    continue;
-                }
-                if matches.len() > 2 {
-                    break;
-                }
-            }
-        }
-
-        if matches.is_empty() {
-            for entry in WalkDir::new(&self.config.app_absolute_path)
-                .into_iter()
-                .filter_map(|e| e.ok())
-            {
-                if !entry.file_type().is_file() {
-                    continue;
-                }
-                if let Some(ext) = entry.path().extension().and_then(|e| e.to_str()) {
-                    if !exts.iter().any(|x| x == &ext) {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-
-                if !match_func_signature_in_file(&name, &entry, &mut matches)? {
-                    continue;
-                }
-
-                if matches.len() > 2 {
-                    break;
-                }
-            }
-        }
-
-        let out = if matches.is_empty() {
-            format!(
-                "No signature for '{}' found under '{}' (exts: {:?})",
-                name, "??", exts
-            )
-        } else {
-            format!(
-                "Found signature(s) for '{}' in {} location(s):\n{}",
-                name,
-                matches.len(),
-                matches
-                    .iter()
-                    .map(|a| format!("- {}", a))
-                    .collect::<Vec<String>>()
-                    .join("\n")
-            )
-        };
-
-        Ok(CallToolResult::success(vec![Content::text(out)]))
+        functools::get_function_signature(
+            &self.config,
+            &self.anal,
+            &args.name,
+            args.module,
+            args.builtin,
+        )
     }
 
-    /// find_doctype: look for Frappe DocType information
-    #[tool(description = "Search for a DocType (by name) in the project")]
-    fn find_doctype(
+    /// get_doctype: get DocType information by name, eg: "Sales Invoice"
+    #[tool(description = "Search and get for a DocType information (by name) in the project")]
+    fn get_doctype(
         &self,
         Parameters(args): Parameters<FindDoctypeArgs>,
     ) -> Result<CallToolResult, McpError> {
-        let target = args.name;
-
-        let mut hits: Vec<String> = Vec::new();
-
-        let candidate = self
-            .anal
-            .doctypes
-            .iter()
-            .find(|a| a.name.to_lowercase() == target.to_lowercase());
-
-        if let Some(doc) = candidate {
-            let mut msg = format!("DocType '{}' found:\n\n", target);
-            msg.push_str(&format!("- Module: {}\n", doc.module));
-            msg.push_str(&format!("- Backend: {}\n", doc.backend_file));
-            if let Some(front) = &doc.frontend_file {
-                msg.push_str(&format!("- Frontend: {}\n", front));
-            }
-            if let Some(meta_file) = &doc.meta_file {
-                msg.push_str(&format!("- Metadata: {}\n", meta_file));
-            }
-            return Ok(CallToolResult::success(vec![Content::text(msg)]));
-        }
-
-        let target_pyname = to_pyname(&target);
-        let root = &self.config.app_absolute_path;
-        let candidate = format!("{}/{}", root, target_pyname);
-
-        // direct relative candidate
-        if !Path::new(&candidate).exists() {
-            return Ok(CallToolResult::success(vec![Content::text(format!(
-                "DocType '{}' not found under '{}'",
-                target, root
-            ))]));
-        }
-
-        // full-tree search for both file name and in-file markers
-        for entry in WalkDir::new(&root).into_iter().filter_map(|e| e.ok()) {
-            if !entry.file_type().is_file() {
-                continue;
-            }
-            let p = entry.path();
-            let path_str = p.display().to_string();
-
-            if path_str.ends_with(&format!("{}/{}.json", target_pyname, target_pyname))
-                && path_str.contains("/doctype/")
-            {
-                hits.push(format!("- Metadata: {}", path_str));
-                continue;
-            }
-
-            if path_str.ends_with(&format!("{}/{}.js", target_pyname, target_pyname))
-                && path_str.contains("/doctype/")
-            {
-                hits.push(format!("- Frontend: {}", path_str));
-                continue;
-            }
-
-            if path_str.ends_with(&format!("{}/{}.py", target_pyname, target_pyname))
-                && path_str.contains("/doctype/")
-            {
-                hits.push(format!("- Backend: {}", path_str));
-                continue;
-            }
-        }
-
-        let out = if hits.is_empty() {
-            format!("DocType '{}' not found under '{}'", target, root)
-        } else {
-            format!("DocType '{}' found:\n{}", target, hits.join("\n"))
-        };
-
-        Ok(CallToolResult::success(vec![Content::text(out)]))
+        functools::get_doctype(&self.config, &self.anal, &args.name)
     }
 
     /// Simple echo (handy for debugging)
     #[tool(description = "Echo back provided JSON params")]
     fn echo(&self, Parameters(object): Parameters<JsonObject>) -> Result<CallToolResult, McpError> {
-        Ok(CallToolResult::success(vec![Content::text(
-            serde_json::Value::Object(object).to_string(),
-        )]))
+        mcp_return!(serde_json::Value::Object(object).to_string())
     }
 
     // -------------------------
@@ -417,7 +233,7 @@ impl ServerHandler for ProjectExplorer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "Project Explorer server. Tools: find_references, get_function_signature, find_doctype, echo. Prompt: example_prompt."
+                "Frappe Based Project Explorer server. Tools: find_references, get_function_signature, get_doctype, echo. Prompt: example_prompt."
                     .to_string(),
             ),
         }
@@ -551,7 +367,7 @@ mod tests {
         let r = ProjectExplorer::tool_router();
         assert!(r.has_route("find_references"));
         assert!(r.has_route("get_function_signature"));
-        assert!(r.has_route("find_doctype"));
+        assert!(r.has_route("get_doctype"));
         assert!(r.has_route("echo"));
     }
 

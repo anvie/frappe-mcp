@@ -1,9 +1,11 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub frappe_bench_dir: String,
     pub app_relative_path: String,
+
+    #[allow(dead_code)]
     pub app_name: String,
 
     #[serde(default)]

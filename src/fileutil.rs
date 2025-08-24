@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use regex::Regex;
 use rmcp::ErrorData as McpError;
-use std::{fs, io::BufRead, path::Path, sync::Arc};
-use walkdir::{DirEntry, WalkDir};
+use std::fs;
+use walkdir::DirEntry;
 
 pub fn match_func_signature_in_file(
     name: &str,
@@ -71,9 +71,9 @@ pub fn match_func_signature_in_file(
     Ok(true)
 }
 
-/// Make a string safe to use as a Python identifier (e.g. for generated function or class names)
+/// Make a string into snake_case compliant and safe for Python identifiers.
 /// For example, given this input: "Sales Invoice", it returns "sales_invoice".
-pub fn to_pyname(name: &str) -> String {
+pub fn to_snakec(name: &str) -> String {
     let name = name.trim();
     let mut result = String::with_capacity(name.len());
     let mut prev_was_underscore = false;
@@ -105,7 +105,7 @@ pub fn to_pyname(name: &str) -> String {
 mod tests {
     use super::*;
     #[test]
-    fn test_to_pyname() {
+    fn test_to_snakec() {
         let cases = vec![
             ("Sales Invoice", "sales_invoice"),
             ("123StartWithDigits", "_123startwithdigits"),
@@ -119,7 +119,7 @@ mod tests {
             ("name.with.dots", "name_with_dots"),
         ];
         for (input, expected) in cases {
-            assert_eq!(to_pyname(input), expected);
+            assert_eq!(to_snakec(input), expected);
         }
     }
 }
