@@ -31,7 +31,7 @@ pub fn run_tests(
 
     // Build command arguments based on parameters
     match (module.as_ref(), doctype.as_ref()) {
-        (Some(m), Some(d)) => {
+        (Some(m), Some(_d)) => {
             // Test specific doctype in specific module
             let test_path = format!(
                 "--app {} --module {}.{}.doctype.{}.test_{}",

@@ -9,12 +9,7 @@ use walkdir::WalkDir;
 
 type McpResult = Result<CallToolResult, McpError>;
 
-pub fn get_doctype(
-    config: &Config,
-    anal: &AnalyzedData,
-    name: &str,
-    metadata_only: bool,
-) -> McpResult {
+pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: bool) -> McpResult {
     let target = name;
     let mut hits: Vec<String> = Vec::new();
 
@@ -24,7 +19,7 @@ pub fn get_doctype(
         .find(|a| a.name.to_lowercase() == target.to_lowercase());
 
     if let Some(doc) = candidate {
-        if metadata_only {
+        if json_only {
             if doc.meta_file.is_none() {
                 mcp_return!(format!(
                     "DocType '{}' found, but has no metadata file",

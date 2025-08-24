@@ -61,9 +61,8 @@ pub struct GetDoctypeArgs {
     /// DocType name (e.g., "Sales Invoice")
     pub name: String,
 
-    /// Show DocType metadata only (default: false)
-    /// This will read only the JSON metadata file if available.
-    pub metadata_only: Option<bool>,
+    /// When true, return only the JSON content of the DocType
+    pub json_only: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -221,7 +220,7 @@ impl ProjectExplorer {
             &self.config,
             &self.anal,
             &args.name,
-            args.metadata_only.unwrap_or(false),
+            args.json_only.unwrap_or(false),
         )
     }
 
@@ -364,7 +363,7 @@ impl ServerHandler for ProjectExplorer {
                     Use tools:\n\
                     - find_symbols { name, search_in?, fuzzy?, limit? }\n\
                     - get_function_signature { name, module?, builtin? }\n\
-                    - get_doctype { name, metadata_only? }\n\
+                    - get_doctype { name, json_only? }\n\
                     - create_doctype_template { name, module, fields? }\n\
                     - run_tests { module?, doctype?, test_type? }\n\
                     - analyze_links { doctype, depth? }
