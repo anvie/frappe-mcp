@@ -9,7 +9,12 @@ use walkdir::WalkDir;
 
 type McpResult = Result<CallToolResult, McpError>;
 
-pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str) -> McpResult {
+pub fn get_doctype(
+    config: &Config,
+    anal: &AnalyzedData,
+    name: &str,
+    metadata_only: bool,
+) -> McpResult {
     let target = name;
     let mut hits: Vec<String> = Vec::new();
 
@@ -19,6 +24,30 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str) -> McpResul
         .find(|a| a.name.to_lowercase() == target.to_lowercase());
 
     if let Some(doc) = candidate {
+        if metadata_only {
+            if doc.meta_file.is_none() {
+                mcp_return!(format!(
+                    "DocType '{}' found, but has no metadata file",
+                    target
+                ));
+            } else {
+                // read whole metadata file
+                let meta_path = format!(
+                    "{}/{}",
+                    config.app_absolute_path,
+                    doc.meta_file.as_ref().unwrap()
+                );
+                if !Path::new(&meta_path).exists() {
+                    mcp_return!(format!(
+                        "DocType '{}' metadata file '{}' not found",
+                        target, meta_path
+                    ));
+                }
+                let content = std::fs::read_to_string(meta_path).unwrap_or_else(|_| "".to_string());
+                mcp_return!(format!("{}", content));
+            }
+        }
+
         let mut msg = format!("DocType '{}' found:\n\n", target);
         msg.push_str(&format!("- Module: {}\n", doc.module));
         msg.push_str(&format!("- Backend: {}\n", doc.backend_file));
