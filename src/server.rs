@@ -24,9 +24,10 @@ use tracing_subscriber::EnvFilter;
 // -----------------------------
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct FindSymbolArgs {
-    /// Symbol to search for across the project/app source files
-    pub symbol: String,
+pub struct FindSymbolsArgs {
+    /// Symbol name to search for across the project/app source files
+    pub name: String,
+
     /// Search in: `backend`, `frontend`, `all` (default: all)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_in: Option<String>,
@@ -105,11 +106,11 @@ impl ProjectExplorer {
     // Tools
     // -------------------------
 
-    /// find_symbol: search for a symbol across the project source files.
-    #[tool(description = "Search for a symbol across the app source files")]
-    fn find_symbol(
+    /// find_symbols: search for a symbol across the project source files.
+    #[tool(description = "Search for symbols across the app source files")]
+    fn find_symbols(
         &self,
-        Parameters(args): Parameters<FindSymbolArgs>,
+        Parameters(args): Parameters<FindSymbolsArgs>,
     ) -> Result<CallToolResult, McpError> {
         // TODO: implement this
         mcp_return!("")
@@ -187,7 +188,7 @@ impl ServerHandler for ProjectExplorer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "Frappe Based Project Explorer server. Tools: find_symbol, get_function_signature, get_doctype, echo. Prompt: example_prompt."
+                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, echo. Prompt: example_prompt."
                     .to_string(),
             ),
         }
@@ -223,7 +224,13 @@ impl ServerHandler for ProjectExplorer {
                 })
             }
             "memo://explorer-notes" => {
-                let memo = "Explorer Notes\n\nUse tools:\n- find_symbol { symbol, root?, exts?, limit? }\n- get_function_signature { name, language?, root?, exts? }\n- find_doctype { name, root? }";
+                let memo = "\
+                    Explorer Notes\n\n\
+                    Use tools:\n\
+                    - find_symbols { name, search_in?, fuzzy?, limit? }\n\
+                    - get_function_signature { name, module?, builtin? }\n\
+                    - get_doctype { name, metadata_only? }
+                ";
                 Ok(ReadResourceResult {
                     contents: vec![ResourceContents::text(memo, uri)],
                 })
@@ -319,7 +326,7 @@ mod tests {
     #[test]
     fn routers_have_tools() {
         let r = ProjectExplorer::tool_router();
-        assert!(r.has_route("find_symbol"));
+        assert!(r.has_route("find_symbols"));
         assert!(r.has_route("get_function_signature"));
         assert!(r.has_route("get_doctype"));
         assert!(r.has_route("echo"));
