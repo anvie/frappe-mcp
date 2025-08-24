@@ -92,7 +92,7 @@ pub struct CreateDoctypeTemplateArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<FieldDefinition>>,
 
-    /// Optional settings for the DocType
+    /// Optional settings for the DocType, like is_single, is_tree, is_child_table, etc.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settings: Option<DoctypeSettings>,
 }
