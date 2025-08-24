@@ -32,7 +32,7 @@ pub fn create_doctype_template(
     let doctype_dir = format!(
         "{}/{}/{}/doctype/{}",
         config.app_absolute_path,
-        snake_name,
+        to_snakec(&config.app_name),
         module.to_lowercase(),
         snake_name
     );
