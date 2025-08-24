@@ -64,7 +64,13 @@ pub fn analyze_frappe_app(
     let root_sub_path = root_path.join(leaf);
     let modules_txt = root_sub_path.join("modules.txt");
 
-    println!("Modules file: {:?}", modules_txt);
+    // println!("Modules file: {:?}", modules_txt);
+
+    if !modules_txt.exists() {
+        return Err(anyhow::anyhow!(
+            "modules.txt not found in the app directory"
+        ));
+    }
 
     // Read modules.txt
     let file = fs::File::open(&modules_txt)?;

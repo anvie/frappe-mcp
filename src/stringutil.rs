@@ -28,6 +28,60 @@ pub fn to_snakec(name: &str) -> String {
     result
 }
 
+/// Ubah teks apa pun menjadi CamelCase yang valid untuk nama kelas Python.
+/// - Pisahkan pada karakter non-alfanumerik
+/// - Kapitalisasi setiap kata (CapWords)
+/// - Prefix "_" bila hasil diawali digit
+/// - Kembalikan "_" bila tidak ada karakter alfanumerik
+pub fn to_camelc(input: &str) -> String {
+    // Kumpulkan kata-kata yang berisi alfanumerik (Unicode-aware)
+    let mut words: Vec<String> = Vec::new();
+    let mut cur = String::new();
+
+    for ch in input.chars() {
+        if ch.is_alphanumeric() {
+            cur.push(ch);
+        } else if !cur.is_empty() {
+            words.push(cur);
+            cur = String::new();
+        }
+    }
+    if !cur.is_empty() {
+        words.push(cur);
+    }
+
+    // Jika tidak ada kata alfanumerik -> "_"
+    if words.is_empty() {
+        return "_".to_string();
+    }
+
+    // CapWords: huruf pertama Upper, sisanya lower (Unicode-aware)
+    let mut camel = String::new();
+    for w in words {
+        let mut it = w.chars();
+        if let Some(first) = it.next() {
+            for up in first.to_uppercase() {
+                camel.push(up);
+            }
+            for c in it.flat_map(|c| c.to_lowercase()) {
+                camel.push(c);
+            }
+        }
+    }
+
+    // Jika diawali digit, prefix "_"
+    if camel
+        .chars()
+        .next()
+        .map(|c| c.is_ascii_digit())
+        .unwrap_or(false)
+    {
+        format!("_{}", camel)
+    } else {
+        camel
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,5 +102,42 @@ mod tests {
         for (input, expected) in cases {
             assert_eq!(to_snakec(input), expected);
         }
+    }
+
+    #[test]
+    fn basic_spaces() {
+        assert_eq!(to_camelc("hello world"), "HelloWorld");
+    }
+
+    #[test]
+    fn underscores_and_punct() {
+        assert_eq!(to_camelc("user_profile"), "UserProfile");
+        assert_eq!(to_camelc("user-profile  v2"), "UserProfileV2");
+    }
+
+    #[test]
+    fn leading_digits_make_prefix() {
+        assert_eq!(to_camelc("123 cats"), "_123Cats");
+        assert_eq!(to_camelc("9_lives"), "_9Lives");
+    }
+
+    #[test]
+    fn unicode_letters() {
+        // Python 3 mengizinkan identifier Unicode; ini tetap dipertahankan.
+        assert_eq!(to_camelc("spécial chärs"), "SpécialChärs");
+        assert_eq!(to_camelc("日本 語_クラス"), "日本語クラス");
+    }
+
+    #[test]
+    fn empty_or_symbols_only() {
+        assert_eq!(to_camelc(""), "_");
+        assert_eq!(to_camelc("?!@#$"), "_");
+    }
+
+    #[test]
+    fn already_camelish() {
+        assert_eq!(to_camelc("AlreadyCamelCase"), "Alreadycamelcase");
+        // Per desain, kata kedua dan seterusnya dilowercase lalu digabung:
+        // hasil masih CapWords yang valid untuk Python.
     }
 }

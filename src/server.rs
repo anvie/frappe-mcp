@@ -108,10 +108,6 @@ pub struct RunTestsArgs {
     /// Specific DocType to test (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doctype: Option<String>,
-
-    /// Test type: unit, integration, or all (default: unit)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub test_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -211,7 +207,9 @@ impl ProjectExplorer {
     }
 
     /// create_doctype_template: Generate boilerplate DocType structure
-    #[tool(description = "Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files")]
+    #[tool(
+        description = "Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files"
+    )]
     fn create_doctype_template(
         &self,
         Parameters(args): Parameters<CreateDoctypeTemplateArgs>,
@@ -221,43 +219,41 @@ impl ProjectExplorer {
             &self.anal,
             &args.name,
             &args.module,
-            args.fields.map(|fields| fields.into_iter().map(|f| functools::FieldDefinition {
-                fieldname: f.fieldname,
-                fieldtype: f.fieldtype,
-                label: f.label,
-                reqd: f.reqd,
-                options: f.options,
-            }).collect()),
+            args.fields.map(|fields| {
+                fields
+                    .into_iter()
+                    .map(|f| functools::FieldDefinition {
+                        fieldname: f.fieldname,
+                        fieldtype: f.fieldtype,
+                        label: f.label,
+                        reqd: f.reqd,
+                        options: f.options,
+                    })
+                    .collect()
+            }),
         )
     }
 
     /// run_tests: Execute unit tests for specific modules or doctypes
-    #[tool(description = "Execute unit tests for specific modules, DocTypes, or entire app using bench run-tests")]
+    #[tool(
+        description = "Execute unit tests for specific modules, DocTypes, or entire app using bench run-tests"
+    )]
     fn run_tests(
         &self,
         Parameters(args): Parameters<RunTestsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::run_tests(
-            &self.config,
-            &self.anal,
-            args.module,
-            args.doctype,
-            args.test_type,
-        )
+        functools::run_tests(&self.config, &self.anal, args.module, args.doctype)
     }
 
     /// analyze_links: Map relationships between DocTypes
-    #[tool(description = "Analyze and map relationships between DocTypes by examining Link, Table, and Select fields")]
+    #[tool(
+        description = "Analyze and map relationships between DocTypes by examining Link, Table, and Select fields"
+    )]
     fn analyze_links(
         &self,
         Parameters(args): Parameters<AnalyzeLinksArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::analyze_links(
-            &self.config,
-            &self.anal,
-            &args.doctype,
-            args.depth,
-        )
+        functools::analyze_links(&self.config, &self.anal, &args.doctype, args.depth)
     }
 
     /// Simple echo (handy for debugging)

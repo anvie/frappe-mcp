@@ -2,7 +2,7 @@
 
 all: target/debug/frappe_mcp
 
-target/debug/frappe_mcp: src/*.rs
+target/debug/frappe_mcp: src/**/*.rs
 	cargo build
 
 fmt:

@@ -13,14 +13,12 @@ pub fn run_tests(
     anal: &AnalyzedData,
     module: Option<String>,
     doctype: Option<String>,
-    test_type: Option<String>,
 ) -> McpResult {
     let app_path = &config.app_absolute_path;
 
     // Verify we're in a Frappe bench directory
     let bench_path = find_bench_root(app_path)?;
 
-    let test_type = test_type.unwrap_or_else(|| "unit".to_string());
     let mut cmd_args: Vec<String> = vec!["run-tests".to_string()];
 
     // Build command arguments based on parameters
@@ -36,7 +34,10 @@ pub fn run_tests(
                 snake_doctype,
                 snake_doctype
             );
-            let test_args: Vec<String> = test_path.split_whitespace().map(|s| s.to_string()).collect();
+            let test_args: Vec<String> = test_path
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
             for arg in test_args {
                 cmd_args.push(arg);
             }
@@ -49,7 +50,10 @@ pub fn run_tests(
                 &config.app_name,
                 m.to_lowercase()
             );
-            let module_args: Vec<String> = module_path.split_whitespace().map(|s| s.to_string()).collect();
+            let module_args: Vec<String> = module_path
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
             for arg in module_args {
                 cmd_args.push(arg);
             }
@@ -66,7 +70,10 @@ pub fn run_tests(
                     snake_doctype,
                     snake_doctype
                 );
-                let test_args: Vec<String> = test_path.split_whitespace().map(|s| s.to_string()).collect();
+                let test_args: Vec<String> = test_path
+                    .split_whitespace()
+                    .map(|s| s.to_string())
+                    .collect();
                 for arg in test_args {
                     cmd_args.push(arg);
                 }
@@ -81,27 +88,27 @@ pub fn run_tests(
         }
     }
 
-    // Add test type specific flags
-    match test_type.as_str() {
-        "unit" => {
-            cmd_args.push("--skip-test-records".to_string());
-        }
-        "integration" => {
-            cmd_args.push("--skip-before-setup".to_string());
-        }
-        "all" => {
-            // Run all tests (default behavior)
-        }
-        _ => {
-            mcp_return!(format!(
-                "Invalid test_type '{}'. Valid options: unit, integration, all",
-                test_type
-            ));
-        }
-    }
+    // // Add test type specific flags
+    // match test_type.as_str() {
+    //     "unit" => {
+    //         cmd_args.push("--skip-test-records".to_string());
+    //     }
+    //     "integration" => {
+    //         cmd_args.push("--skip-before-setup".to_string());
+    //     }
+    //     "all" => {
+    //         // Run all tests (default behavior)
+    //     }
+    //     _ => {
+    //         mcp_return!(format!(
+    //             "Invalid test_type '{}'. Valid options: unit, integration, all",
+    //             test_type
+    //         ));
+    //     }
+    // }
 
-    // Add coverage flag
-    cmd_args.push("--coverage".to_string());
+    // // Add coverage flag
+    // cmd_args.push("--coverage".to_string());
 
     // Execute bench command
     let output = Command::new("bench")
@@ -234,4 +241,3 @@ fn extract_test_summary(output: &str) -> Option<String> {
         Some(summary.join("\n"))
     }
 }
-

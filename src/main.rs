@@ -47,14 +47,8 @@ enum CommandEnum {
             help = "Directory/codebase to analyze"
         )]
         app_dir: String,
-
-        #[arg(
-            short,
-            long,
-            default_value = "appname",
-            help = "relative path from root"
-        )]
-        relative_path: String,
+        // #[arg(short, long, help = "relative path from root")]
+        // relative_path: String,
     },
     /// Run the MCP server
     Run,
@@ -80,12 +74,10 @@ async fn main() {
     let (args, config) = parse_args();
 
     match args.command {
-        CommandEnum::Analyze {
-            app_dir,
-            relative_path,
-        } => {
+        CommandEnum::Analyze { app_dir } => {
             // Perform analysis and output to the specified file
             let output = "analyzed_output.toml";
+            let relative_path = config.app_relative_path.clone();
             if let Err(e) = analyze::analyze_frappe_app(&app_dir, &relative_path, output) {
                 eprintln!("Analysis error: {}", e);
                 exit(1);
