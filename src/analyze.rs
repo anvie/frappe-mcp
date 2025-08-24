@@ -11,10 +11,9 @@
 // from Nuwaira.
 
 use crate::refs_finder::{
-    analyze_frappe_field_usage, DoctypeUsage, Output as RefsFinderOutput, Stats,
+    analyze_frappe_field_usage, Output as RefsFinderOutput,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::Path;

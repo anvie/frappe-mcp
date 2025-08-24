@@ -156,6 +156,19 @@ pub struct CreateWebPageArgs {
     pub include_js: Option<bool>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct GetFieldUsageArgs {
+    /// DocType name to search field usage in
+    pub doctype: String,
+
+    /// Field name to search for usage
+    pub field_name: String,
+
+    /// Maximum number of occurrences to return (default: 10)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+}
+
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ExamplePromptArgs {
     /// A message to put in the prompt
@@ -316,6 +329,21 @@ impl ProjectExplorer {
         )
     }
 
+    /// get_field_usage: Get field usage references for a specific DocType field
+    #[tool(description = "Get field usage references for a specific DocType field")]
+    fn get_field_usage(
+        &self,
+        Parameters(args): Parameters<GetFieldUsageArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::get_field_usage(
+            &self.config,
+            &self.anal,
+            &args.doctype,
+            &args.field_name,
+            args.limit,
+        )
+    }
+
     /// Simple echo (handy for debugging)
     #[tool(description = "Echo back provided JSON params")]
     fn echo(&self, Parameters(object): Parameters<JsonObject>) -> Result<CallToolResult, McpError> {
@@ -358,7 +386,7 @@ impl ServerHandler for ProjectExplorer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, create_doctype_template, create_web_page, run_tests, analyze_links, echo. Prompt: example_prompt."
+                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, create_doctype_template, create_web_page, run_tests, analyze_links, get_field_usage, echo. Prompt: example_prompt."
                     .to_string(),
             ),
         }
@@ -403,7 +431,8 @@ impl ServerHandler for ProjectExplorer {
                     - create_doctype_template { name, module, fields? }\n\
                     - create_web_page { path, title?, include_css?, include_js? }\n\
                     - run_tests { module?, doctype?, test_type? }\n\
-                    - analyze_links { doctype, depth? }
+                    - analyze_links { doctype, depth? }\n\
+                    - get_field_usage { doctype, field_name, limit? }
                 ";
                 Ok(ReadResourceResult {
                     contents: vec![ResourceContents::text(memo, uri)],
@@ -515,6 +544,7 @@ mod tests {
         assert!(r.has_route("create_web_page"));
         assert!(r.has_route("run_tests"));
         assert!(r.has_route("analyze_links"));
+        assert!(r.has_route("get_field_usage"));
         assert!(r.has_route("echo"));
     }
 
