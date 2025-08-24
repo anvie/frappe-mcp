@@ -21,6 +21,7 @@ mod functools;
 mod server;
 mod stringutil;
 
+use crate::stringutil::to_snakec;
 use config::Config;
 
 #[derive(Parser, Debug)]
@@ -77,7 +78,7 @@ async fn main() {
         CommandEnum::Analyze { app_dir } => {
             // Perform analysis and output to the specified file
             let output = "analyzed_output.toml";
-            let relative_path = config.app_relative_path.clone();
+            let relative_path = format!("{}", config.app_relative_path,);
             if let Err(e) = analyze::analyze_frappe_app(&app_dir, &relative_path, output) {
                 eprintln!("Analysis error: {}", e);
                 exit(1);

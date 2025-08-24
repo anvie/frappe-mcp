@@ -28,7 +28,7 @@ pub fn get_doctype(
             if doc.meta_file.is_none() {
                 mcp_return!(format!(
                     "DocType '{}' found, but has no metadata file",
-                    target
+                    doc.name
                 ));
             } else {
                 // read whole metadata file
@@ -48,7 +48,7 @@ pub fn get_doctype(
             }
         }
 
-        let mut msg = format!("DocType '{}' found:\n\n", target);
+        let mut msg = format!("DocType '{}' found:\n\n", doc.name);
         msg.push_str(&format!("- Module: {}\n", doc.module));
         msg.push_str(&format!("- Backend: {}\n", doc.backend_file));
         if let Some(front) = &doc.frontend_file {

@@ -19,8 +19,10 @@ impl Config {
     pub fn from_file(file_path: &str) -> Result<Config, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(file_path)?;
         let mut config = Self::from_toml_str(&content)?;
-        config.app_absolute_path =
-            format!("{}/{}", config.frappe_bench_dir, config.app_relative_path);
+        config.app_absolute_path = format!(
+            "{}/apps/{}",
+            config.frappe_bench_dir, config.app_relative_path
+        );
         Ok(config)
     }
 }
