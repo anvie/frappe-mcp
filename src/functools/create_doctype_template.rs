@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-use crate::analyze::AnalyzedData;
+use crate::analyze::{AnalyzedData, DocType};
 use crate::config::Config;
 use crate::stringutil::{to_pascalc, to_snakec};
 use rmcp::{model::*, ErrorData as McpError};
@@ -30,7 +30,7 @@ pub struct FieldDefinition {
 
 pub fn create_doctype_template(
     config: &Config,
-    _anal: &AnalyzedData,
+    anal: &mut AnalyzedData,
     name: &str,
     module: &str,
     fields: Option<Vec<FieldDefinition>>,
@@ -99,6 +99,33 @@ pub fn create_doctype_template(
         mcp_return!(format!("Failed to write __init__.py: {}", e));
     }
     result.push(format!("✓ Created __init__.py: {}", init_path));
+
+    // Update analyzed data so subsequent queries can find this DocType without re-analyzing
+    anal.doctypes.push(DocType {
+        name: name.to_string(),
+        backend_file: format!(
+            "{}/{}/doctype/{}/{}.py",
+            config.app_relative_path,
+            module.to_lowercase(),
+            snake_name,
+            snake_name
+        ),
+        frontend_file: Some(format!(
+            "{}/{}/doctype/{}/{}.js",
+            config.app_relative_path,
+            module.to_lowercase(),
+            snake_name,
+            snake_name
+        )),
+        meta_file: Some(format!(
+            "{}/{}/doctype/{}/{}.json",
+            config.app_relative_path,
+            module.to_lowercase(),
+            snake_name,
+            snake_name
+        )),
+        module: module.to_string(),
+    });
 
     let summary = format!(
         "DocType '{}' template created successfully in module '{}':\n\n{}\n\nNext steps:\n- Run 'bench migrate' to install the DocType\n- Customize fields in the JSON metadata\n- Add business logic in the Python controller",

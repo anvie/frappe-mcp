@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
@@ -16,7 +16,6 @@ use rmcp::{
 use rmcp::{tool_handler, tool_router};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tokio::sync::Mutex;
 use tracing_subscriber::EnvFilter;
 
 // -----------------------------
@@ -185,7 +184,7 @@ pub struct ProjectExplorer {
     tool_router: ToolRouter<ProjectExplorer>,
     prompt_router: PromptRouter<ProjectExplorer>,
     config: Config,
-    anal: AnalyzedData,
+    anal: Arc<Mutex<AnalyzedData>>,
 }
 
 #[tool_router]
@@ -197,7 +196,7 @@ impl ProjectExplorer {
             tool_router: Self::tool_router(),
             prompt_router: Self::prompt_router(),
             config,
-            anal,
+            anal: Arc::new(Mutex::new(anal)),
         }
     }
 
@@ -215,9 +214,10 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<FindSymbolsArgs>,
     ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
         functools::find_symbols(
             &self.config,
-            &self.anal,
+            &anal,
             &args.name,
             args.search_in,
             args.fuzzy,
@@ -232,9 +232,10 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<GetFunctionSignatureArgs>,
     ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
         functools::get_function_signature(
             &self.config,
-            &self.anal,
+            &anal,
             &args.name,
             args.module,
             args.builtin,
@@ -247,9 +248,10 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<GetDoctypeArgs>,
     ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
         functools::get_doctype(
             &self.config,
-            &self.anal,
+            &anal,
             &args.name,
             args.json_only.unwrap_or(false),
         )
@@ -263,9 +265,10 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<CreateDoctypeTemplateArgs>,
     ) -> Result<CallToolResult, McpError> {
+        let mut anal = self.anal.lock().unwrap();
         functools::create_doctype_template(
             &self.config,
-            &self.anal,
+            &mut anal,
             &args.name,
             &args.module,
             args.fields.map(|fields| {
@@ -297,7 +300,8 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<RunTestsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::run_tests(&self.config, &self.anal, args.module, args.doctype)
+        let anal = self.anal.lock().unwrap();
+        functools::run_tests(&self.config, &anal, args.module, args.doctype)
     }
 
     /// analyze_links: Map relationships between DocTypes
@@ -308,7 +312,8 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<AnalyzeLinksArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::analyze_links(&self.config, &self.anal, &args.doctype, args.depth)
+        let anal = self.anal.lock().unwrap();
+        functools::analyze_links(&self.config, &anal, &args.doctype, args.depth)
     }
 
     /// create_web_page: Generate boilerplate web page files with HTML, CSS, and JavaScript
@@ -319,9 +324,10 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<CreateWebPageArgs>,
     ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
         functools::create_web_page(
             &self.config,
-            &self.anal,
+            &anal,
             &args.path,
             args.title,
             args.include_css,
@@ -337,9 +343,10 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<GetFieldUsageArgs>,
     ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
         functools::find_field_usage(
             &self.config,
-            &self.anal,
+            &anal,
             &args.doctype,
             &args.field_name,
             args.limit,
