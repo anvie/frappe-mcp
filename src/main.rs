@@ -20,6 +20,7 @@ mod fileutil;
 mod functools;
 mod refs_finder;
 mod server;
+mod shellutil;
 mod stringutil;
 
 use config::Config;
