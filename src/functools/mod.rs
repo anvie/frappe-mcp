@@ -5,6 +5,7 @@ mod find_field_usage;
 mod find_symbols;
 mod get_doctype;
 mod get_function_signature;
+mod run_bench_command;
 mod run_tests;
 
 pub use analyze_links::analyze_links;
@@ -14,4 +15,5 @@ pub use find_field_usage::find_field_usage;
 pub use find_symbols::find_symbols;
 pub use get_doctype::get_doctype;
 pub use get_function_signature::get_function_signature;
+pub use run_bench_command::run_bench_command;
 pub use run_tests::run_tests;

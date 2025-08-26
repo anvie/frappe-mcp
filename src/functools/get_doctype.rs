@@ -154,7 +154,7 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
     mcp_return!(out)
 }
 
-pub fn parse_doctype_metadata(json_file: &str) -> Result<DocTypeStruct, McpError> {
+fn parse_doctype_metadata(json_file: &str) -> Result<DocTypeStruct, McpError> {
     if !Path::new(json_file).exists() {
         return Err(McpError::new(
             ErrorCode::INVALID_REQUEST,
@@ -171,7 +171,7 @@ pub fn parse_doctype_metadata(json_file: &str) -> Result<DocTypeStruct, McpError
     })?)
 }
 
-pub fn parse_doctype_metadata_string(json_content: &str) -> Result<DocTypeStruct, McpError> {
+fn parse_doctype_metadata_string(json_content: &str) -> Result<DocTypeStruct, McpError> {
     let doc_struct: DocTypeStruct = serde_json::from_str(json_content).map_err(|e| {
         McpError::new(
             ErrorCode::INVALID_REQUEST,
@@ -185,8 +185,6 @@ pub fn parse_doctype_metadata_string(json_content: &str) -> Result<DocTypeStruct
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analyze::AnalyzedData;
-    use crate::config::Config;
 
     #[test]
     fn test_parse_doctype_metadata() {

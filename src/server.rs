@@ -174,6 +174,12 @@ pub struct ExamplePromptArgs {
     pub message: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+pub struct RunBenchCommandArgs {
+    /// Arguments to pass to the `bench` command, eg: `migrate`, `mariadb -e "SELECT 1"`, etc.
+    pub args: Vec<String>,
+}
+
 // -----------------------------
 // Server impl
 // -----------------------------
@@ -353,11 +359,24 @@ impl ProjectExplorer {
         )
     }
 
-    /// Simple echo (handy for debugging)
-    #[tool(description = "Echo back provided JSON params")]
-    fn echo(&self, Parameters(object): Parameters<JsonObject>) -> Result<CallToolResult, McpError> {
-        mcp_return!(serde_json::Value::Object(object).to_string())
+    /// run_bench_command: Run arbitrary `bench` command with arguments, e.g: `migrate`
+    #[tool(description = "Run arbitrary bench command with args, e.g: migrate")]
+    fn run_bench_command(
+        &self,
+        Parameters(args): Parameters<RunBenchCommandArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::run_bench_command(
+            &self.config,
+            &self.anal.lock().unwrap(),
+            &args.args.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
+        )
     }
+
+    /// /// Simple echo (handy for debugging)
+    /// #[tool(description = "Echo back provided JSON params")]
+    /// fn echo(&self, Parameters(object): Parameters<JsonObject>) -> Result<CallToolResult, McpError> {
+    ///     mcp_return!(serde_json::Value::Object(object).to_string())
+    /// }
 
     // -------------------------
     // Example prompts (optional)
@@ -554,7 +573,7 @@ mod tests {
         assert!(r.has_route("run_tests"));
         assert!(r.has_route("analyze_links"));
         assert!(r.has_route("find_field_usage"));
-        assert!(r.has_route("echo"));
+        assert!(r.has_route("run_bench_command"));
     }
 
     #[tokio::test]
