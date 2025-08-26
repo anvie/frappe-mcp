@@ -24,5 +24,6 @@ build-linux-arm64:
 	@@echo Building for Linux ARM64...
 	@@cargo zigbuild --target aarch64-unknown-linux-gnu --release
 
+
 .PHONY: clean fmt build-linux-amd64 build-linux-arm64
 

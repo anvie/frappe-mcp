@@ -131,12 +131,6 @@ pub fn run_tests(
 
             let mut response = String::new();
 
-            if result.status.success() {
-                response.push_str("✓ Tests completed successfully\n\n");
-            } else {
-                response.push_str("✗ Tests failed\n\n");
-            }
-
             response.push_str("COMMAND EXECUTED:\n");
             response.push_str(&format!("bench {}\n\n", cmd_args.join(" ")));
 
@@ -160,12 +154,12 @@ pub fn run_tests(
                 response.push_str("\n\n");
             }
 
-            // Try to extract test summary
-            if let Some(summary) = extract_test_summary(&stdout) {
-                response.push_str("TEST SUMMARY:\n");
-                response.push_str(&summary);
-                response.push('\n');
-            }
+            // // Try to extract test summary
+            // if let Some(summary) = extract_test_summary(&stdout) {
+            //     response.push_str("TEST SUMMARY:\n");
+            //     response.push_str(&summary);
+            //     response.push('\n');
+            // }
 
             response.push_str(&format!(
                 "Exit code: {}\n",

@@ -65,21 +65,6 @@ pub struct GetDoctypeArgs {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct DoctypeSettings {
-    /// Whether the DocType is a single instance (default: false)
-    pub is_single: Option<bool>,
-
-    /// Whether the DocType is a tree structure (default: false)
-    pub is_tree: Option<bool>,
-
-    /// Whether the DocType is submittable (default: false)
-    pub is_submittable: Option<bool>,
-
-    /// Whether the DocType is a child table (default: false)
-    pub is_child_table: Option<bool>,
-}
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CreateDoctypeTemplateArgs {
     /// DocType name (e.g., "Task")
     pub name: String,
@@ -91,9 +76,21 @@ pub struct CreateDoctypeTemplateArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<FieldDefinition>>,
 
-    /// Optional settings for the DocType, like is_single, is_tree, is_child_table, etc.
+    /// Whether the DocType is a single instance (default: false)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub settings: Option<DoctypeSettings>,
+    pub is_single: Option<bool>,
+
+    /// Whether the DocType is a tree structure (default: false)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_tree: Option<bool>,
+
+    /// Whether the DocType is submittable (default: false)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_submittable: Option<bool>,
+
+    /// Whether the DocType is a child table (default: false)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_child_table: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema, Clone)]
@@ -178,6 +175,12 @@ pub struct ExamplePromptArgs {
 pub struct RunBenchCommandArgs {
     /// Arguments to pass to the `bench` command, eg: `migrate`, `mariadb -e "SELECT 1"`, etc.
     pub args: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct GetDoctypeDbSchemaArgs {
+    /// DocType name (e.g., "Sales Invoice")
+    pub name: String,
 }
 
 // -----------------------------
@@ -289,11 +292,11 @@ impl ProjectExplorer {
                     })
                     .collect()
             }),
-            args.settings.map(|s| functools::DoctypeSettings {
-                is_single: s.is_single.unwrap_or(false),
-                is_tree: s.is_tree.unwrap_or(false),
-                is_submittable: s.is_submittable.unwrap_or(false),
-                is_table: s.is_child_table.unwrap_or(false),
+            Some(functools::DoctypeSettings {
+                is_single: args.is_single.unwrap_or(false),
+                is_tree: args.is_tree.unwrap_or(false),
+                is_submittable: args.is_submittable.unwrap_or(false),
+                is_table: args.is_child_table.unwrap_or(false),
             }),
         )
     }
@@ -370,6 +373,15 @@ impl ProjectExplorer {
             &self.anal.lock().unwrap(),
             &args.args.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
         )
+    }
+
+    /// get_doctype_db_schema: Get the database schema for a specific DocType
+    #[tool(description = "Get the database schema for a specific DocType")]
+    fn get_doctype_db_schema(
+        &self,
+        Parameters(args): Parameters<GetDoctypeDbSchemaArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::get_doctype_db_schema(&self.config, &self.anal.lock().unwrap(), &args.name)
     }
 
     /// /// Simple echo (handy for debugging)
