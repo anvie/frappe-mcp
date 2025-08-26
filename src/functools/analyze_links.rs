@@ -315,4 +315,3 @@ fn format_link_analysis(
 
     Ok(result)
 }
-

@@ -10,9 +10,7 @@
 // is strictly forbidden unless prior written permission is obtained
 // from Nuwaira.
 
-use crate::refs_finder::{
-    analyze_frappe_field_usage, Output as RefsFinderOutput,
-};
+use crate::refs_finder::{analyze_frappe_field_usage, Output as RefsFinderOutput};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, BufReader};

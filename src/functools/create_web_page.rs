@@ -232,4 +232,3 @@ mod tests {
         assert!(js.contains("initializeComponents"));
     }
 }
-
