@@ -6,7 +6,8 @@ use crate::config::Config;
 use crate::functools;
 use rmcp::{
     handler::server::{router::prompt::PromptRouter, tool::ToolRouter, wrapper::Parameters},
-    model::*, prompt_handler, prompt_router, schemars,
+    model::*,
+    prompt_handler, prompt_router, schemars,
     service::RequestContext,
     tool,
     transport::stdio,
@@ -501,6 +502,135 @@ impl ServerHandler for ProjectExplorer {
 }
 
 // -----------------------------
+// Helper functions
+// -----------------------------
+
+fn should_run_analysis(config: &Config, analysis_file: &str) -> bool {
+    use std::path::Path;
+
+    // Always analyze if file doesn't exist
+    if !Path::new(analysis_file).exists() {
+        tracing::info!(
+            "Analysis file '{}' doesn't exist, will run analysis",
+            analysis_file
+        );
+        return true;
+    }
+
+    // Check if any source files are newer than analysis file
+    let app_path = Path::new(&config.app_absolute_path);
+    if !app_path.exists() {
+        tracing::warn!("App directory '{}' doesn't exist", config.app_absolute_path);
+        return false;
+    }
+
+    // Get analysis file modification time
+    let analysis_mtime = match std::fs::metadata(analysis_file).and_then(|m| m.modified()) {
+        Ok(time) => time,
+        Err(_) => {
+            tracing::info!("Could not get analysis file modification time, will run analysis");
+            return true;
+        }
+    };
+
+    // Check if modules.txt is newer
+    let modules_txt = app_path.join(&config.app_relative_path).join("modules.txt");
+    if let Ok(metadata) = std::fs::metadata(&modules_txt) {
+        if let Ok(mtime) = metadata.modified() {
+            if mtime > analysis_mtime {
+                tracing::info!("modules.txt is newer than analysis file, will run analysis");
+                return true;
+            }
+        }
+    }
+
+    // Check if any doctype files are newer than analysis
+    if check_doctype_files_newer(&config, analysis_mtime) {
+        tracing::info!("Found doctype files newer than analysis file, will run analysis");
+        return true;
+    }
+
+    tracing::debug!("Analysis file '{}' is up to date", analysis_file);
+    false
+}
+
+fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemTime) -> bool {
+    use std::fs;
+    use std::path::Path;
+
+    let app_path = Path::new(&config.app_absolute_path);
+    let modules_txt = app_path.join(&config.app_relative_path).join("modules.txt");
+
+    // Read modules.txt to get module list
+    let modules_content = match fs::read_to_string(&modules_txt) {
+        Ok(content) => content,
+        Err(_) => return false,
+    };
+
+    for line in modules_content.lines() {
+        let module_title = line.trim();
+        if module_title.is_empty() {
+            continue;
+        }
+
+        let module_dir = module_title.to_lowercase();
+        let module_path = app_path.join(&config.app_relative_path).join(&module_dir);
+
+        // Check doctype directory
+        let doctype_path = module_path.join("doctype");
+        // tracing::debug!("Checking doctype path: {:?}", doctype_path);
+        if !doctype_path.exists() || !doctype_path.is_dir() {
+            continue;
+        }
+
+        // Check each doctype directory
+        if let Ok(entries) = fs::read_dir(&doctype_path) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if !entry.file_type().map_or(false, |ft| ft.is_dir()) {
+                        continue;
+                    }
+
+                    let doctype_name = entry.file_name().to_string_lossy().to_string();
+                    if doctype_name.is_empty()
+                        || ["__pycache__", ".git"].contains(&doctype_name.as_str())
+                    {
+                        continue;
+                    }
+
+                    let doctype_dir = entry.path();
+
+                    // Check .py, .js, and .json files
+                    let files_to_check = vec![
+                        doctype_dir.join(format!("{}.py", &doctype_name)),
+                        // doctype_dir.join(format!("{}.js", &doctype_name)),
+                        doctype_dir.join(format!("{}.json", &doctype_name)),
+                    ];
+
+                    for file_path in files_to_check {
+                        if file_path.exists() {
+                            if let Ok(metadata) = fs::metadata(&file_path) {
+                                if let Ok(mtime) = metadata.modified() {
+                                    if mtime > analysis_mtime {
+                                        tracing::debug!(
+                                            "File {:?} is newer than analysis",
+                                            file_path
+                                        );
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
+// -----------------------------
 // Main: run over stdio
 // -----------------------------
 
@@ -518,8 +648,24 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
         .with_ansi(false)
         .init();
 
-    tracing::debug!("Load analyzed data: anazyled_output.toml");
-    let anal = AnalyzedData::from_file("analyzed_output.toml")
+    // Auto-run analysis if needed
+    let analysis_file = "analyzed_output.toml";
+    let should_analyze = should_run_analysis(&config, analysis_file);
+
+    if should_analyze {
+        tracing::info!("Running automatic analysis...");
+        let app_dir = &config.app_absolute_path;
+        let relative_path = format!("{}", config.app_relative_path);
+
+        if let Err(e) = crate::analyze::analyze_frappe_app(app_dir, &relative_path, analysis_file) {
+            tracing::error!("Failed to run automatic analysis: {}", e);
+        } else {
+            tracing::info!("Automatic analysis completed");
+        }
+    }
+
+    tracing::debug!("Load analyzed data: {}", analysis_file);
+    let anal = AnalyzedData::from_file(analysis_file)
         .map(|data| {
             tracing::debug!(
                 "Analyzed Data:\n\
@@ -533,8 +679,9 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
         })
         .unwrap_or_else(|e| {
             tracing::warn!(
-            "Failed to load analyzed data from 'analyzed_output.toml': {}. Using empty analysis.",
-            e
+                "Failed to load analyzed data from '{}': {}. Using empty analysis.",
+                analysis_file,
+                e
             );
             AnalyzedData {
                 doctypes: Vec::new(),
