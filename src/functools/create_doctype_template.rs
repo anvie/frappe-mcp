@@ -38,11 +38,12 @@ pub fn create_doctype_template(
 ) -> McpResult {
     let snake_name = to_snakec(name);
     let camel_name = to_pascalc(name);
+    let module_snake = to_snakec(module);
     let doctype_dir = format!(
         "{}/{}/{}/doctype/{}",
         config.app_absolute_path,
         to_snakec(&config.app_name),
-        module.to_lowercase(),
+        module_snake,
         snake_name
     );
 
@@ -105,24 +106,15 @@ pub fn create_doctype_template(
         name: name.to_string(),
         backend_file: format!(
             "{}/{}/doctype/{}/{}.py",
-            config.app_relative_path,
-            module.to_lowercase(),
-            snake_name,
-            snake_name
+            config.app_relative_path, module_snake, snake_name, snake_name
         ),
         frontend_file: Some(format!(
             "{}/{}/doctype/{}/{}.js",
-            config.app_relative_path,
-            module.to_lowercase(),
-            snake_name,
-            snake_name
+            config.app_relative_path, module_snake, snake_name, snake_name
         )),
         meta_file: Some(format!(
             "{}/{}/doctype/{}/{}.json",
-            config.app_relative_path,
-            module.to_lowercase(),
-            snake_name,
-            snake_name
+            config.app_relative_path, module_snake, snake_name, snake_name
         )),
         module: module.to_string(),
     });
