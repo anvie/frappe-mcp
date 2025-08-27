@@ -6,8 +6,7 @@ use crate::config::Config;
 use crate::functools;
 use rmcp::{
     handler::server::{router::prompt::PromptRouter, tool::ToolRouter, wrapper::Parameters},
-    model::*,
-    prompt, prompt_handler, prompt_router, schemars,
+    model::*, prompt_handler, prompt_router, schemars,
     service::RequestContext,
     tool,
     transport::stdio,
@@ -175,6 +174,12 @@ pub struct ExamplePromptArgs {
 pub struct RunBenchCommandArgs {
     /// Arguments to pass to the `bench` command, eg: `migrate`, `mariadb -e "SELECT 1"`, etc.
     pub args: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+pub struct RunMariadbCommandArgs {
+    /// SQL query to execute via bench mariadb command
+    pub sql: String,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -384,28 +389,13 @@ impl ProjectExplorer {
         functools::get_doctype_db_schema(&self.config, &self.anal.lock().unwrap(), &args.name)
     }
 
-    /// /// Simple echo (handy for debugging)
-    /// #[tool(description = "Echo back provided JSON params")]
-    /// fn echo(&self, Parameters(object): Parameters<JsonObject>) -> Result<CallToolResult, McpError> {
-    ///     mcp_return!(serde_json::Value::Object(object).to_string())
-    /// }
-
-    // -------------------------
-    // Example prompts (optional)
-    // -------------------------
-
-    /// example_prompt: tiny demo prompt to show prompt routing works
-    #[prompt(name = "example_prompt")]
-    async fn example_prompt(
+    /// run_mariadb_command: Execute SQL query via bench mariadb command
+    #[tool(description = "Execute SQL query via bench mariadb command")]
+    fn run_mariadb_command(
         &self,
-        Parameters(args): Parameters<ExamplePromptArgs>,
-        _ctx: RequestContext<RoleServer>,
-    ) -> Result<Vec<PromptMessage>, McpError> {
-        let prompt = format!("Example prompt message: '{}'", args.message);
-        Ok(vec![PromptMessage {
-            role: PromptMessageRole::User,
-            content: PromptMessageContent::text(prompt),
-        }])
+        Parameters(args): Parameters<RunMariadbCommandArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::run_mariadb_command(&self.config, &self.anal.lock().unwrap(), &args.sql)
     }
 }
 
@@ -586,13 +576,14 @@ mod tests {
         assert!(r.has_route("analyze_links"));
         assert!(r.has_route("find_field_usage"));
         assert!(r.has_route("run_bench_command"));
+        assert!(r.has_route("run_mariadb_command"));
     }
 
-    #[tokio::test]
-    async fn prompt_has_route() {
-        let r = ProjectExplorer::prompt_router();
-        assert!(r.has_route("example_prompt"));
-        let attr = ProjectExplorer::example_prompt_prompt_attr();
-        assert_eq!(attr.name, "example_prompt");
-    }
+    // #[tokio::test]
+    // async fn prompt_has_route() {
+    //     let r = ProjectExplorer::prompt_router();
+    //     assert!(r.has_route("example_prompt"));
+    //     let attr = ProjectExplorer::example_prompt_prompt_attr();
+    //     assert_eq!(attr.name, "example_prompt");
+    // }
 }
