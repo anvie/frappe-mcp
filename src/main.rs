@@ -40,7 +40,7 @@ struct Args {
 /// Enum of subcommands
 #[derive(Subcommand, Debug)]
 enum CommandEnum {
-    /// Analyze the codebase and output a analyzed_output.toml file.
+    /// Analyze the codebase and output a analyzed_output.dat file.
     Analyze {
         #[arg(
             short,
@@ -78,7 +78,7 @@ async fn main() {
     match args.command {
         CommandEnum::Analyze { app_dir } => {
             // Perform analysis and output to the specified file
-            let output = "analyzed_output.toml";
+            let output = "analyzed_output.dat";
             let relative_path = format!("{}", config.app_relative_path,);
             if let Err(e) = analyze::analyze_frappe_app(&app_dir, &relative_path, output) {
                 eprintln!("Analysis error: {}", e);

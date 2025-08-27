@@ -30,25 +30,6 @@ pub struct Module {
     pub name: String,
     pub location: String,
 }
-//
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub struct RefLocation {
-//     pub file: String,
-//     pub line: usize,
-//     pub var: String,
-//     pub kind: String, // e.g., "attr" | "subscript" | "get" | "set" | "append" | "get_value" | "inline"
-// }
-//
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub struct DoctypeRefs {
-//     pub fields: BTreeMap<String, Vec<RefLocation>>,
-// }
-//
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub struct SymbolRefs {
-//     pub doctypes: BTreeMap<String, DoctypeRefs>,
-//     pub unknown: BTreeMap<String, BTreeMap<String, Vec<RefLocation>>>,
-// }
 
 #[derive(Serialize, Deserialize)]
 struct Analysis {
@@ -65,8 +46,9 @@ pub struct AnalyzedData {
 }
 
 impl AnalyzedData {
-    pub fn from_toml_str(toml_str: &str) -> Result<AnalyzedData, toml::de::Error> {
-        toml::from_str(toml_str)
+    pub fn from_toml_str(toml_str: &str) -> Result<AnalyzedData, serde_json::Error> {
+        // toml::from_str(toml_str)
+        serde_json::from_str(toml_str)
     }
 
     pub fn from_file(file_path: &str) -> Result<AnalyzedData, Box<dyn std::error::Error>> {
@@ -197,8 +179,8 @@ pub fn analyze_frappe_app(
         symbol_refs: symbol_refs.ok(),
     };
 
-    let toml_str = toml::to_string(&analysis)?;
-    fs::write(output_file, toml_str)?;
+    let json_str = serde_json::to_string_pretty(&analysis)?;
+    fs::write(output_file, json_str)?;
 
     Ok(())
 }

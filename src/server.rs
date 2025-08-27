@@ -649,7 +649,7 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
         .init();
 
     // Auto-run analysis if needed
-    let analysis_file = "analyzed_output.toml";
+    let analysis_file = "analyzed_output.dat";
     let should_analyze = should_run_analysis(&config, analysis_file);
 
     if should_analyze {

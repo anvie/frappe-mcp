@@ -16,21 +16,25 @@ A Model Context Protocol (MCP) server designed to help AI agents understand and 
 ## Tools Available
 
 ### Core Analysis Tools
+
 - **`find_symbols`**: Search for symbols across the app source files with fuzzy matching support
 - **`get_function_signature`**: Extract function signatures from app source files, optionally within specific modules
 - **`find_field_usage`**: Search for references to specific DocType fields in code
 
 ### DocType Management
+
 - **`get_doctype`**: Get comprehensive DocType information by name (e.g., "Sales Invoice")
 - **`get_doctype_db_schema`**: Get the database schema for a specific DocType
 - **`create_doctype_template`**: Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files
 - **`analyze_links`**: Analyze and map relationships between DocTypes by examining Link, Table, and Select fields
 
 ### Development & Testing
+
 - **`create_web_page`**: Generate boilerplate web page files with HTML, CSS, and JavaScript structure
 - **`run_tests`**: Execute unit tests for specific modules, DocTypes, or entire app using bench run-tests
 
 ### System Integration
+
 - **`run_bench_command`**: Run arbitrary bench command with arguments (e.g., migrate, install-app)
 - **`run_mariadb_command`**: Execute SQL queries via bench mariadb command
 
@@ -84,6 +88,7 @@ site = "yoursite.localhost"
 ```
 
 Configuration parameters:
+
 - `frappe_bench_dir`: Path to your Frappe bench directory
 - `app_relative_path`: Name of your app directory within the bench/apps folder
 - `app_name`: Display name of your app
@@ -97,7 +102,7 @@ While the server automatically analyzes your app on startup, you can also run an
 cargo run -- --config frappe-mcp.conf analyze --app-dir /path/to/frappe-bench/apps/your-app
 ```
 
-This generates an `analyzed_output.toml` file with structured information about your app's modules and DocTypes.
+This generates an `analyzed_output.dat` file with structured information about your app's modules and DocTypes.
 
 ## Project Structure
 
