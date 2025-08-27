@@ -302,7 +302,7 @@ impl ProjectExplorer {
                 is_single: args.is_single.unwrap_or(false),
                 is_tree: args.is_tree.unwrap_or(false),
                 is_submittable: args.is_submittable.unwrap_or(false),
-                is_table: args.is_child_table.unwrap_or(false),
+                is_child_table: args.is_child_table.unwrap_or(false),
             }),
         )
     }

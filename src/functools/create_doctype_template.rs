@@ -13,7 +13,7 @@ type McpResult = Result<CallToolResult, McpError>;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DoctypeSettings {
-    pub is_table: bool,
+    pub is_child_table: bool,
     pub is_tree: bool,
     pub is_single: bool,
     pub is_submittable: bool,
@@ -65,7 +65,7 @@ pub fn create_doctype_template(
 
     // 1. Create JSON metadata file
     let settings = DoctypeSettings {
-        is_table: settings.as_ref().map_or(false, |s| s.is_table),
+        is_child_table: settings.as_ref().map_or(false, |s| s.is_child_table),
         is_tree: settings.as_ref().map_or(false, |s| s.is_tree),
         is_single: settings.as_ref().map_or(false, |s| s.is_single),
         is_submittable: settings.as_ref().map_or(false, |s| s.is_submittable),
@@ -78,7 +78,7 @@ pub fn create_doctype_template(
     result.push(format!("✓ Created metadata: {}", json_path));
 
     // 2. Create Python controller file
-    let py_content = create_python_controller(config, name, &camel_name, &fields);
+    let py_content = create_python_controller(config, name, &camel_name, &fields, &settings);
     let py_path = format!("{}/{}.py", doctype_dir, snake_name);
     if let Err(e) = fs::write(&py_path, py_content) {
         mcp_return!(format!("Failed to write Python file: {}", e));
@@ -183,7 +183,7 @@ fn create_json_metadata(
         "is_submittable": settings.is_submittable,
         "is_tree": settings.is_tree,
         "issingle": settings.is_single,
-        "istable": settings.is_table,
+        "istable": settings.is_child_table,
         "max_attachments": 0,
         "modified": format!("{}-01-01 00:00:00.000000", get_current_year()),
         "modified_by": "Administrator",
@@ -280,10 +280,11 @@ fn create_python_controller(
     name: &str,
     camel_name: &str,
     fields: &[FieldDefinition],
+    settings: &DoctypeSettings,
 ) -> String {
     let df_types = generate_field_types(fields);
 
-    format!(
+    let mut result = format!(
         r#"# Copyright (c) {}, {}
 # For license information, please see license.txt
 
@@ -309,7 +310,18 @@ class {}(Document):
         {}
     # end: auto-generated types
     
-    def before_insert(self):
+"#,
+        get_current_year(),
+        config.app_name,
+        camel_name,
+        name,
+        name,
+        df_types
+    );
+
+    if !settings.is_child_table {
+        result.push_str(
+            r#"    def before_insert(self):
         """Called before inserting the document into the database."""
         pass
     
@@ -333,13 +345,12 @@ class {}(Document):
         """Called when the document is being deleted."""
         pass
 "#,
-        get_current_year(),
-        config.app_name,
-        camel_name,
-        name,
-        name,
-        df_types
-    )
+        )
+    } else {
+        result.push_str("    pass\n");
+    }
+
+    return result;
 }
 
 fn create_javascript_form(config: &Config, name: &str, _snake_name: &str) -> String {
