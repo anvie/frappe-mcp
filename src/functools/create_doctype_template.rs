@@ -6,7 +6,7 @@ use std::path::Path;
 
 use crate::analyze::{AnalyzedData, DocType};
 use crate::config::Config;
-use crate::stringutil::{to_pascalc, to_snakec};
+use crate::stringutil::{generate_abbrev, to_pascalc, to_snakec};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -19,13 +19,17 @@ pub struct DoctypeSettings {
     pub is_submittable: bool,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct FieldDefinition {
     pub fieldname: String,
     pub fieldtype: String,
     pub label: String,
-    pub reqd: Option<bool>,
+    pub reqd: Option<u16>,
     pub options: Option<String>,
+    pub in_list_view: Option<u16>,
+    pub in_standard_filter: Option<u16>,
+    pub read_only: Option<u16>,
+    pub length: Option<u32>,
 }
 
 pub fn create_doctype_template(
@@ -143,11 +147,12 @@ fn create_json_metadata(
         fieldname: "naming_series".to_string(),
         fieldtype: "Select".to_string(),
         label: "Series".to_string(),
-        reqd: Some(true),
-        options: Some(format!(
-            "{}-YYYY-MM-DD-####",
-            name.chars().take(3).collect::<String>().to_uppercase()
-        )),
+        reqd: Some(1),
+        options: Some(format!("{}-YYYY-MM-DD-####", generate_abbrev(name))),
+        in_list_view: None,
+        in_standard_filter: None,
+        read_only: None,
+        length: None,
     }];
 
     // Add custom fields if provided
@@ -257,7 +262,7 @@ fn generate_field_types(fields: &[FieldDefinition]) -> String {
             "Time" => "DF.Time",
             _ => "DF.Data", // Default to Data for unknown types
         };
-        let optional = if field.reqd.unwrap_or(false) {
+        let optional = if field.reqd.unwrap_or(0) == 1 {
             ""
         } else {
             " | None"
@@ -319,6 +324,7 @@ class {}(Document):
     
     def validate(self):
         """Called during document validation."""
+        # @TODO: Add custom validation logic here
         pass
     
     def before_save(self):
@@ -391,22 +397,25 @@ mod tests {
                 fieldname: "title".to_string(),
                 fieldtype: "Data".to_string(),
                 label: "Title".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "description".to_string(),
                 fieldtype: "Text".to_string(),
                 label: "Description".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "amount".to_string(),
                 fieldtype: "Currency".to_string(),
                 label: "Amount".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
         ];
 
@@ -423,29 +432,33 @@ mod tests {
                 fieldname: "count".to_string(),
                 fieldtype: "Int".to_string(),
                 label: "Count".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "rate".to_string(),
                 fieldtype: "Float".to_string(),
                 label: "Rate".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "created_date".to_string(),
                 fieldtype: "Date".to_string(),
                 label: "Created Date".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "start_time".to_string(),
                 fieldtype: "Time".to_string(),
                 label: "Start Time".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: None,
+                ..Default::default()
             },
         ];
 
@@ -461,15 +474,17 @@ mod tests {
                 fieldname: "is_active".to_string(),
                 fieldtype: "Check".to_string(),
                 label: "Is Active".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "discount".to_string(),
                 fieldtype: "Percent".to_string(),
                 label: "Discount".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: None,
+                ..Default::default()
             },
         ];
 
@@ -485,22 +500,25 @@ mod tests {
                 fieldname: "customer".to_string(),
                 fieldtype: "Link".to_string(),
                 label: "Customer".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: Some("Customer".to_string()),
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "status".to_string(),
                 fieldtype: "Select".to_string(),
                 label: "Status".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: Some("Draft\n        Submitted\n        Cancelled".to_string()),
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "priority".to_string(),
                 fieldtype: "Select".to_string(),
                 label: "Priority".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: Some("High".to_string()),
+                ..Default::default()
             },
         ];
 
@@ -516,8 +534,9 @@ mod tests {
             fieldname: "unknown_field".to_string(),
             fieldtype: "CustomType".to_string(),
             label: "Unknown Field".to_string(),
-            reqd: Some(true),
+            reqd: Some(1),
             options: None,
+            ..Default::default()
         }];
 
         let result = generate_field_types(&fields);
@@ -539,29 +558,33 @@ mod tests {
                 fieldname: "data_field".to_string(),
                 fieldtype: "Data".to_string(),
                 label: "Data Field".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "small_text_field".to_string(),
                 fieldtype: "Small Text".to_string(),
                 label: "Small Text Field".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "text_editor_field".to_string(),
                 fieldtype: "Text Editor".to_string(),
                 label: "Text Editor Field".to_string(),
-                reqd: Some(false),
+                reqd: Some(0),
                 options: None,
+                ..Default::default()
             },
             FieldDefinition {
                 fieldname: "datetime_field".to_string(),
                 fieldtype: "Datetime".to_string(),
                 label: "Datetime Field".to_string(),
-                reqd: Some(true),
+                reqd: Some(1),
                 options: None,
+                ..Default::default()
             },
         ];
 

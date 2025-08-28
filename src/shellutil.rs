@@ -97,8 +97,11 @@ where
 
     let truncated_stdout = truncate_output(&stdout, 50);
     let truncated_stderr = truncate_output(&stderr, 50);
-    
-    Ok(format!("STDOUT:\n{}\n\nSTDERR:\n{}", truncated_stdout, truncated_stderr))
+
+    Ok(format!(
+        "STDOUT:\n{}\n\nSTDERR:\n{}",
+        truncated_stdout, truncated_stderr
+    ))
 }
 
 pub fn run_mariadb_command(config: &Config, sql: &str) -> Result<String> {
@@ -107,37 +110,40 @@ pub fn run_mariadb_command(config: &Config, sql: &str) -> Result<String> {
 
 fn truncate_output(output: &str, max_lines: usize) -> String {
     const MAX_CHARS: usize = 2000;
-    
+
     let lines: Vec<&str> = output.lines().collect();
-    
+
     // If within both limits, return as-is
     if lines.len() <= max_lines && output.len() <= MAX_CHARS {
         return output.to_string();
     }
-    
+
     let mut result = String::new();
     let mut line_count = 0;
-    
+
     for line in lines.iter() {
         if line_count >= max_lines || result.len() + line.len() + 1 > MAX_CHARS {
             break;
         }
-        
+
         if !result.is_empty() {
             result.push('\n');
         }
         result.push_str(line);
         line_count += 1;
     }
-    
+
     let total_lines = lines.len();
     let total_chars = output.len();
     let truncated_lines = total_lines - line_count;
     let truncated_chars = total_chars - result.len();
-    
+
     if truncated_lines > 0 || truncated_chars > 0 {
-        result.push_str(&format!("\n... (truncated {} lines, {} chars)", truncated_lines, truncated_chars));
+        result.push_str(&format!(
+            "\n... (truncated {} lines, {} chars)",
+            truncated_lines, truncated_chars
+        ));
     }
-    
+
     result
 }

@@ -98,6 +98,36 @@ pub fn to_pascalc(input: &str) -> String {
     }
 }
 
+pub fn generate_abbrev(name: &str) -> String {
+    // Split words, filter out empty, normalize
+    let words: Vec<&str> = name.split_whitespace().filter(|w| !w.is_empty()).collect();
+
+    if words.is_empty() {
+        return String::new();
+    }
+
+    let mut abbrev = String::new();
+
+    // Case 1: If multiple words, take the first letter of first 3 words
+    if words.len() > 1 {
+        for w in words.iter().take(3) {
+            if let Some(ch) = w.chars().next() {
+                abbrev.push(ch.to_ascii_uppercase());
+            }
+        }
+    } else {
+        // Case 2: If only one word, take up to first 3 characters
+        let word = words[0];
+        abbrev = word
+            .chars()
+            .take(3)
+            .collect::<String>()
+            .to_ascii_uppercase();
+    }
+
+    abbrev
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,5 +192,15 @@ mod tests {
         assert_eq!(to_pascalc("123abc"), "_123abc");
         assert_eq!(to_pascalc("hello_world"), "HelloWorld");
         assert_eq!(to_pascalc("alreadyCamel"), "AlreadyCamel");
+    }
+
+    #[test]
+    fn test_abbrev() {
+        assert_eq!(generate_abbrev("The Economist Magazine"), "TEM");
+        assert_eq!(generate_abbrev("The Economist"), "TE");
+        assert_eq!(generate_abbrev("Economist"), "ECO");
+        assert_eq!(generate_abbrev("The Economist Magazine System"), "TEM");
+        assert_eq!(generate_abbrev("A"), "A");
+        assert_eq!(generate_abbrev(""), "");
     }
 }

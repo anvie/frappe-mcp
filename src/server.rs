@@ -111,6 +111,22 @@ pub struct FieldDefinition {
     /// Options for Select/Link fields
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<String>,
+
+    /// Whether to include field in list view
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_list_view: Option<bool>,
+
+    /// Whether to include field in filters
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_standard_filter: Option<bool>,
+
+    /// Whether field is read-only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_only: Option<bool>,
+
+    /// Length for Data fields (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub length: Option<u32>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -293,8 +309,12 @@ impl ProjectExplorer {
                         fieldname: f.fieldname,
                         fieldtype: f.fieldtype,
                         label: f.label,
-                        reqd: f.reqd,
+                        reqd: f.reqd.map(|a| if a { 1 } else { 0 }),
                         options: f.options,
+                        length: f.length,
+                        in_list_view: f.in_list_view.map(|a| if a { 1 } else { 0 }),
+                        in_standard_filter: f.in_standard_filter.map(|a| if a { 1 } else { 0 }),
+                        read_only: f.read_only.map(|a| if a { 1 } else { 0 }),
                     })
                     .collect()
             }),
