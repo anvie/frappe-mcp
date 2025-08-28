@@ -167,7 +167,7 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
     let out = if result.is_empty() {
         format!("DocType '{}' not found under '{}'", target, root)
     } else {
-        format!("DocType '{}' found:\n{}", target, result.join("\n"))
+        result.join("\n")
     };
 
     mcp_return!(out)

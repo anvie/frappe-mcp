@@ -4,6 +4,7 @@ use std::path::Path;
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
 use crate::fileutil::match_func_signature_in_file;
+use crate::stringutil::to_snakec;
 use rmcp::{model::*, ErrorData as McpError};
 use serde_json::json;
 use walkdir::WalkDir;
@@ -28,7 +29,7 @@ pub fn get_function_signature(
         let f_mod = anal
             .modules
             .iter()
-            .find(|m| m.name == module)
+            .find(|m| to_snakec(&m.name) == to_snakec(&module))
             .ok_or_else(|| {
                 McpError::invalid_request("module_not_found", Some(json!({ "module": module })))
             })?;
