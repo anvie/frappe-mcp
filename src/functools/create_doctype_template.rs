@@ -149,8 +149,8 @@ fn create_json_metadata(
         label: "Series".to_string(),
         reqd: Some(1),
         options: Some(format!("{}-YYYY-MM-DD-####", generate_abbrev(name))),
-        in_list_view: None,
-        in_standard_filter: None,
+        in_list_view: Some(0),
+        in_standard_filter: Some(0),
         read_only: None,
         length: None,
     }];
