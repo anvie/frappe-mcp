@@ -298,9 +298,11 @@ mod tests {
         let test_content = include_str!("../../test_data/branch.json");
 
         let result = parse_doctype_metadata_string(&test_content);
-        if let Err(e) = &result {
-            panic!("Failed to parse doctype metadata: {:?}", e);
-        }
+        assert!(
+            result.is_ok(),
+            "Failed to parse doctype metadata: {:?}",
+            result.err()
+        );
 
         let doc_struct = result.unwrap();
         assert_eq!(doc_struct.default_view, "List");
@@ -312,13 +314,15 @@ mod tests {
         assert_eq!(branch_code_field.fieldtype, "Data");
         assert_eq!(branch_code_field.reqd, Some(true));
         assert_eq!(branch_code_field.unique, Some(true));
+        assert_eq!(branch_code_field.in_list_view, Some(true));
 
         let branch_name_field = &doc_struct.fields[1];
         assert_eq!(branch_name_field.fieldname, "branch_name");
         assert_eq!(branch_name_field.fieldtype, "Data");
         assert_eq!(branch_name_field.reqd, Some(true));
+        assert_eq!(branch_name_field.in_list_view, Some(true));
 
-        // Test optional fields
+        // Test Link field with options
         let country_field = &doc_struct
             .fields
             .iter()
@@ -326,7 +330,9 @@ mod tests {
             .unwrap();
         assert_eq!(country_field.fieldtype, "Link");
         assert_eq!(country_field.options, Some("Country".to_string()));
+        assert_eq!(country_field.reqd, Some(true));
 
+        // Test Check field with default value
         let is_active_field = &doc_struct
             .fields
             .iter()
@@ -334,6 +340,23 @@ mod tests {
             .unwrap();
         assert_eq!(is_active_field.fieldtype, "Check");
         assert_eq!(is_active_field.default, Some("0".to_string()));
+
+        // Test field with specific options (phone/email)
+        let phone_field = &doc_struct
+            .fields
+            .iter()
+            .find(|f| f.fieldname == "phone")
+            .unwrap();
+        assert_eq!(phone_field.fieldtype, "Data");
+        assert_eq!(phone_field.options, Some("Phone".to_string()));
+
+        let email_field = &doc_struct
+            .fields
+            .iter()
+            .find(|f| f.fieldname == "email")
+            .unwrap();
+        assert_eq!(email_field.fieldtype, "Data");
+        assert_eq!(email_field.options, Some("Email".to_string()));
 
         // Verify field ordering matches expected order from field_order
         let expected_order = vec![
@@ -354,5 +377,14 @@ mod tests {
         for (i, expected_fieldname) in expected_order.iter().enumerate() {
             assert_eq!(doc_struct.fields[i].fieldname, *expected_fieldname);
         }
+
+        // Test that integer boolean values are properly converted to bool
+        assert_eq!(branch_code_field.reqd, Some(true)); // was 1 in JSON
+        assert_eq!(branch_code_field.unique, Some(true)); // was 1 in JSON
+        assert_eq!(branch_code_field.in_list_view, Some(true)); // was 1 in JSON
+
+        // Test that missing boolean fields default to None
+        assert_eq!(branch_code_field.hidden, None);
+        assert_eq!(branch_code_field.read_only, None);
     }
 }

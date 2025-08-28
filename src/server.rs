@@ -35,7 +35,7 @@ pub struct FindSymbolsArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fuzzy: Option<bool>,
 
-    /// Maximum number of matches to return (default 5)
+    /// Maximum number of matches to return (default 50)
     #[serde(default)]
     pub limit: Option<usize>,
 }

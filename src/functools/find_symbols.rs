@@ -71,7 +71,7 @@ pub fn find_symbols(
 ) -> McpResult {
     let search_in = search_in.unwrap_or_else(|| "all".to_string());
     let fuzzy = fuzzy.unwrap_or(false);
-    let limit = limit.unwrap_or(5);
+    let limit = limit.unwrap_or(50);
 
     // Set file extensions based on search type
     let exts = match search_in.as_str() {

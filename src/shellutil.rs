@@ -95,8 +95,8 @@ where
         ));
     }
 
-    let truncated_stdout = truncate_output(&stdout, 50);
-    let truncated_stderr = truncate_output(&stderr, 50);
+    let truncated_stdout = truncate_output(&stdout, 5000);
+    let truncated_stderr = truncate_output(&stderr, 5000);
 
     Ok(format!(
         "STDOUT:\n{}\n\nSTDERR:\n{}",
@@ -108,42 +108,81 @@ pub fn run_mariadb_command(config: &Config, sql: &str) -> Result<String> {
     run_bench_command(config, &["mariadb", "-e", sql])
 }
 
-fn truncate_output(output: &str, max_lines: usize) -> String {
-    const MAX_CHARS: usize = 2000;
-
-    let lines: Vec<&str> = output.lines().collect();
-
-    // If within both limits, return as-is
-    if lines.len() <= max_lines && output.len() <= MAX_CHARS {
+fn truncate_output(output: &str, max_chars: usize) -> String {
+    // If within character limit, return as-is
+    if output.len() <= max_chars {
         return output.to_string();
     }
 
     let mut result = String::new();
-    let mut line_count = 0;
 
-    for line in lines.iter() {
-        if line_count >= max_lines || result.len() + line.len() + 1 > MAX_CHARS {
+    // Find the last complete character within the limit
+    let mut char_count = 0;
+    for ch in output.chars() {
+        if char_count + ch.len_utf8() > max_chars {
             break;
         }
-
-        if !result.is_empty() {
-            result.push('\n');
-        }
-        result.push_str(line);
-        line_count += 1;
+        result.push(ch);
+        char_count += ch.len_utf8();
     }
 
-    let total_lines = lines.len();
-    let total_chars = output.len();
-    let truncated_lines = total_lines - line_count;
-    let truncated_chars = total_chars - result.len();
-
-    if truncated_lines > 0 || truncated_chars > 0 {
-        result.push_str(&format!(
-            "\n... (truncated {} lines, {} chars)",
-            truncated_lines, truncated_chars
-        ));
-    }
+    let truncated_chars = output.len() - result.len();
+    result.push_str(&format!("\n... (truncated {} chars)", truncated_chars));
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_truncate_output_within_limit() {
+        let input = "Hello world";
+        let result = truncate_output(input, 20);
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test]
+    fn test_truncate_output_exact_limit() {
+        let input = "Hello world";
+        let result = truncate_output(input, 11);
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test]
+    fn test_truncate_output_exceeds_limit() {
+        let input = "Hello world this is a long string";
+        let result = truncate_output(input, 10);
+        assert_eq!(result, "Hello worl\n... (truncated 23 chars)");
+    }
+
+    #[test]
+    fn test_truncate_output_with_unicode() {
+        let input = "Hello 🌍 world";
+        let result = truncate_output(input, 10);
+        // The emoji takes 4 bytes, so "Hello 🌍" is 9 bytes, can't fit " world"
+        assert_eq!(result, "Hello 🌍\n... (truncated 6 chars)");
+    }
+
+    #[test]
+    fn test_truncate_output_empty_string() {
+        let input = "";
+        let result = truncate_output(input, 10);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_truncate_output_single_char() {
+        let input = "a";
+        let result = truncate_output(input, 0);
+        assert_eq!(result, "\n... (truncated 1 chars)");
+    }
+
+    #[test]
+    fn test_truncate_output_newlines_preserved() {
+        let input = "Line 1\nLine 2\nLine 3";
+        let result = truncate_output(input, 10);
+        assert_eq!(result, "Line 1\nLin\n... (truncated 10 chars)");
+    }
 }
