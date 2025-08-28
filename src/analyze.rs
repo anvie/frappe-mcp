@@ -11,6 +11,7 @@
 // from Nuwaira.
 
 use crate::refs_finder::{analyze_frappe_field_usage, Output as RefsFinderOutput};
+use crate::stringutil::to_snakec;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -86,10 +87,11 @@ pub fn analyze_frappe_app(
         let line = line?;
         let module_title = line.trim();
         if module_title.is_empty() {
+            tracing::warn!("Skipping empty module title");
             continue;
         }
 
-        let module_dir = module_title.to_lowercase();
+        let module_dir = to_snakec(&module_title);
         let module_path = root_sub_path.join(&module_dir);
 
         if module_path.exists() && module_path.is_dir() {
@@ -104,6 +106,7 @@ pub fn analyze_frappe_app(
 
             // scan doctypes
             let doctype_path = module_path.join("doctype");
+            println!("Scanning doctype in {:?}", doctype_path);
             if doctype_path.exists() && doctype_path.is_dir() {
                 for entry in fs::read_dir(&doctype_path)? {
                     let entry = entry?;

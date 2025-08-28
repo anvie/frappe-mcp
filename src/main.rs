@@ -19,6 +19,7 @@ mod config;
 mod fileutil;
 mod functools;
 mod refs_finder;
+mod serdeutil;
 mod server;
 mod shellutil;
 mod stringutil;

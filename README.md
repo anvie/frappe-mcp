@@ -71,7 +71,7 @@ Use the MCP Inspector to test the server:
 
 ```bash
 cargo build --release
-npx @modelcontextprotocol/inspector ./target/release/frappe_mcp --config frappe-mcp.conf run
+npx @modelcontextprotocol/inspector -- ./target/release/frappe_mcp --config frappe-mcp.conf run
 ```
 
 Available test methods include all tools listed above: `find_symbols`, `get_function_signature`, `get_doctype`, `create_doctype_template`, `run_tests`, `analyze_links`, `create_web_page`, `find_field_usage`, `run_bench_command`, `get_doctype_db_schema`, `run_mariadb_command`
