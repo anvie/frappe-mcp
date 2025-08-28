@@ -53,15 +53,18 @@ pub fn create_doctype_template(
 
     // Check if DocType already exists
     if Path::new(&doctype_dir).exists() {
-        mcp_return!(format!(
-            "DocType '{}' already exists at: {}",
-            name, doctype_dir
-        ));
-    }
-
-    // Create directory structure
-    if let Err(e) = fs::create_dir_all(&doctype_dir) {
-        mcp_return!(format!("Failed to create directory {}: {}", doctype_dir, e));
+        // check is py file already exists
+        if Path::new(&format!("{}/{}.py", doctype_dir, snake_name)).exists() {
+            mcp_return!(format!(
+                "DocType '{}' already exists at: {}",
+                name, doctype_dir
+            ));
+        }
+    } else {
+        // Create directory structure
+        if let Err(e) = fs::create_dir_all(&doctype_dir) {
+            mcp_return!(format!("Failed to create directory {}: {}", doctype_dir, e));
+        }
     }
 
     let mut result = Vec::new();
@@ -148,7 +151,7 @@ fn create_json_metadata(
         fieldtype: "Select".to_string(),
         label: "Series".to_string(),
         reqd: Some(1),
-        options: Some(format!("{}-YYYY-MM-DD-####", generate_abbrev(name))),
+        options: Some(format!("{}-.YY.MM.DD.####", generate_abbrev(name))),
         in_list_view: Some(0),
         in_standard_filter: Some(0),
         read_only: None,
