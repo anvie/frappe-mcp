@@ -1,4 +1,14 @@
-#![allow(dead_code)]
+// Copyright (C) 2025 Nuwaira
+// All Rights Reserved.
+//
+// NOTICE: All information contained herein is, and remains
+// the property of Nuwaira.
+// The intellectual and technical concepts contained
+// herein are proprietary to Nuwaira
+// and are protected by trade secret or copyright law.
+// Dissemination of this information or reproduction of this material
+// is strictly forbidden unless prior written permission is obtained
+// from Nuwaira.
 use std::path::Path;
 use std::process::Command;
 
@@ -215,38 +225,38 @@ fn find_doctype_module(anal: &AnalyzedData, doctype_name: &str) -> Option<String
         .map(|dt| dt.module.clone())
 }
 
-fn extract_test_summary(output: &str) -> Option<String> {
-    let lines: Vec<&str> = output.lines().collect();
-    let mut summary = Vec::new();
-    let mut in_summary = false;
-
-    for line in lines {
-        if line.contains("FAILED") || line.contains("PASSED") || line.contains("ERROR") {
-            in_summary = true;
-        }
-
-        if in_summary {
-            if line.contains("=")
-                && (line.contains("passed") || line.contains("failed") || line.contains("error"))
-            {
-                summary.push(line.to_string());
-                break;
-            }
-
-            if line.contains("FAILED") || line.contains("ERROR") {
-                summary.push(line.to_string());
-            }
-        }
-
-        // Look for coverage information
-        if line.contains("Total coverage:") || line.contains("TOTAL") {
-            summary.push(line.to_string());
-        }
-    }
-
-    if summary.is_empty() {
-        None
-    } else {
-        Some(summary.join("\n"))
-    }
-}
+// fn extract_test_summary(output: &str) -> Option<String> {
+//     let lines: Vec<&str> = output.lines().collect();
+//     let mut summary = Vec::new();
+//     let mut in_summary = false;
+//
+//     for line in lines {
+//         if line.contains("FAILED") || line.contains("PASSED") || line.contains("ERROR") {
+//             in_summary = true;
+//         }
+//
+//         if in_summary {
+//             if line.contains("=")
+//                 && (line.contains("passed") || line.contains("failed") || line.contains("error"))
+//             {
+//                 summary.push(line.to_string());
+//                 break;
+//             }
+//
+//             if line.contains("FAILED") || line.contains("ERROR") {
+//                 summary.push(line.to_string());
+//             }
+//         }
+//
+//         // Look for coverage information
+//         if line.contains("Total coverage:") || line.contains("TOTAL") {
+//             summary.push(line.to_string());
+//         }
+//     }
+//
+//     if summary.is_empty() {
+//         None
+//     } else {
+//         Some(summary.join("\n"))
+//     }
+// }

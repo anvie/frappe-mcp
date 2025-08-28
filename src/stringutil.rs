@@ -1,3 +1,15 @@
+// Copyright (C) 2025 Nuwaira
+// All Rights Reserved.
+//
+// NOTICE: All information contained herein is, and remains
+// the property of Nuwaira.
+// The intellectual and technical concepts contained
+// herein are proprietary to Nuwaira
+// and are protected by trade secret or copyright law.
+// Dissemination of this information or reproduction of this material
+// is strictly forbidden unless prior written permission is obtained
+// from Nuwaira.
+
 /// Make a string into snake_case compliant and safe for Python identifiers.
 /// For example, given this input: "Sales Invoice", it returns "sales_invoice".
 pub fn to_snakec(name: &str) -> String {
