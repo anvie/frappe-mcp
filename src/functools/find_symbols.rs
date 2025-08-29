@@ -222,8 +222,8 @@ pub fn find_symbols(
 
     let out = if top_matches.is_empty() {
         format!(
-            "No symbols matching '{}' found in {} (search: {}, fuzzy: {}, exts: {:?})",
-            name, search_in, search_in, fuzzy, exts
+            "No symbols matching '{}' found in {} (search: {}, fuzzy: {})",
+            name, search_in, search_in, fuzzy
         )
     } else {
         let display_count = top_matches.len();

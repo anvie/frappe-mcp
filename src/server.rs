@@ -400,7 +400,9 @@ impl ProjectExplorer {
     }
 
     /// run_bench_command: Run arbitrary `bench` command with arguments, e.g: `migrate`
-    #[tool(description = "Run arbitrary bench command with args, e.g: migrate")]
+    #[tool(
+        description = "Run arbitrary bench command with args, e.g: `migrate`, the `--site` is auto-added, no need to include it."
+    )]
     fn run_bench_command(
         &self,
         Parameters(args): Parameters<RunBenchCommandArgs>,
