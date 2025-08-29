@@ -149,6 +149,10 @@ pub struct RunTestsArgs {
     /// Specific DocType to test (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doctype: Option<String>,
+
+    /// Specific test to run, e.g., "test_method_name" (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -347,7 +351,7 @@ impl ProjectExplorer {
         Parameters(args): Parameters<RunTestsArgs>,
     ) -> Result<CallToolResult, McpError> {
         let anal = self.anal.lock().unwrap();
-        functools::run_tests(&self.config, &anal, args.module, args.doctype)
+        functools::run_tests(&self.config, &anal, args.module, args.doctype, args.test)
     }
 
     /// analyze_links: Map relationships between DocTypes

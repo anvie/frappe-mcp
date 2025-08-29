@@ -24,6 +24,7 @@ pub fn run_tests(
     anal: &AnalyzedData,
     module: Option<String>,
     doctype: Option<String>,
+    test: Option<String>,
 ) -> McpResult {
     // let app_path = &config.app_absolute_path;
 
@@ -105,24 +106,10 @@ pub fn run_tests(
         }
     }
 
-    // // Add test type specific flags
-    // match test_type.as_str() {
-    //     "unit" => {
-    //         cmd_args.push("--skip-test-records".to_string());
-    //     }
-    //     "integration" => {
-    //         cmd_args.push("--skip-before-setup".to_string());
-    //     }
-    //     "all" => {
-    //         // Run all tests (default behavior)
-    //     }
-    //     _ => {
-    //         mcp_return!(format!(
-    //             "Invalid test_type '{}'. Valid options: unit, integration, all",
-    //             test_type
-    //         ));
-    //     }
-    // }
+    if let Some(t) = test {
+        cmd_args.push("--test".to_string());
+        cmd_args.push(t);
+    }
 
     if cmd_args.len() > 1 {
         tracing::debug!("Executing bench command: bench {}", cmd_args.join(" "));
