@@ -167,7 +167,7 @@ pub struct AnalyzeLinksArgs {
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CreateWebPageArgs {
-    /// File path where the web page should be created (relative to app directory)
+    /// File path where the web page should be created, don't include "www/" prefix, eg: "about.html" or "info/contact.html"
     pub path: String,
 
     /// Page title (optional, defaults to filename)
