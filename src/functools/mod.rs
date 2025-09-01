@@ -18,6 +18,7 @@ mod get_doctype;
 mod get_doctype_db_schema;
 mod get_function_signature;
 mod run_bench_command;
+mod run_bench_execute;
 mod run_mariadb_command;
 mod run_tests;
 
@@ -30,5 +31,6 @@ pub use get_doctype::get_doctype;
 pub use get_doctype_db_schema::get_doctype_db_schema;
 pub use get_function_signature::get_function_signature;
 pub use run_bench_command::run_bench_command;
+pub use run_bench_execute::run_bench_execute;
 pub use run_mariadb_command::run_mariadb_command;
 pub use run_tests::run_tests;
