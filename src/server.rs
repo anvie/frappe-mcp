@@ -453,7 +453,7 @@ impl ProjectExplorer {
     /// run_bench_execute: Execute Frappe function via bench execute command
     #[tool(
         description = "Execute Frappe function via bench execute command with optional args and kwargs.\n\
-        Example: run_bench_execute(\"frappe.db.get_list\", \"Invoice\",\"{\"fields\":\"[\"invoice_code\"]\"}\")"
+        Example: run_bench_execute(frappe.db.get_list, Invoice, {fields:[\"invoice_code\"]})"
     )]
     fn run_bench_execute(
         &self,

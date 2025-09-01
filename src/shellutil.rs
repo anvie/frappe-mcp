@@ -92,12 +92,12 @@ where
         .args(args);
 
     let output = cmd.output().with_context(|| "Failed to spawn bench")?;
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
     if !output.status.success() {
-        let truncated_stdout = truncate_output(&stdout, 50);
-        let truncated_stderr = truncate_output(&stderr, 50);
+        let truncated_stdout = truncate_output(&stdout, 3000);
+        let truncated_stderr = truncate_output(&stderr, 3000);
         bail!(format!(
             "bench exited with code {:?}\nSTDOUT:\n{}\n\nSTDERR:\n{}",
             output.status.code(),
