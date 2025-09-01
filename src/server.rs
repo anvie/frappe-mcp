@@ -450,16 +450,16 @@ impl ProjectExplorer {
         functools::run_mariadb_command(&self.config, &self.anal.lock().unwrap(), &args.sql)
     }
 
-    /// run_bench_execute: Execute Frappe function via bench execute command
+    /// bench_execute: Execute Frappe function via bench execute command
     #[tool(
         description = "Execute Frappe function via bench execute command with optional args and kwargs.\n\
-        Example: run_bench_execute(frappe.db.get_list, Invoice, {fields:[\"invoice_code\"]})"
+        Example: bench_execute(frappe.db.get_list, Invoice, {fields:[\"invoice_code\"]})"
     )]
-    fn run_bench_execute(
+    fn bench_execute(
         &self,
         Parameters(args): Parameters<RunBenchExecuteArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::run_bench_execute(
+        functools::bench_execute(
             &self.config,
             &self.anal.lock().unwrap(),
             &args.frappe_function,
@@ -792,7 +792,7 @@ mod tests {
         assert!(r.has_route("analyze_links"));
         assert!(r.has_route("find_field_usage"));
         assert!(r.has_route("run_bench_command"));
-        assert!(r.has_route("run_bench_execute"));
+        assert!(r.has_route("bench_execute"));
         assert!(r.has_route("run_mariadb_command"));
     }
 
