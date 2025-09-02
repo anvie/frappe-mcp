@@ -18,8 +18,8 @@ use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
 
-pub fn run_mariadb_command(config: &Config, _anal: &AnalyzedData, sql: &str) -> McpResult {
-    shellutil::run_mariadb_command(config, sql)
+pub fn run_db_command(config: &Config, _anal: &AnalyzedData, sql: &str) -> McpResult {
+    shellutil::run_db_command(config, sql)
         .map_err(|e| McpError::new(ErrorCode::INTERNAL_ERROR, format!("{}", e), None))
         .and_then(|output| mcp_return!(output))
 }

@@ -115,7 +115,7 @@ where
     ))
 }
 
-pub fn run_mariadb_command(config: &Config, sql: &str) -> Result<String> {
+pub fn run_db_command(config: &Config, sql: &str) -> Result<String> {
     run_bench_command(config, &["mariadb", "-e", sql])
 }
 

@@ -36,7 +36,7 @@ A Model Context Protocol (MCP) server designed to help AI agents understand and 
 ### System Integration
 
 - **`run_bench_command`**: Run arbitrary bench command with arguments (e.g., migrate, install-app)
-- **`run_mariadb_command`**: Execute SQL queries via bench mariadb command
+- **`run_db_command`**: Execute SQL queries via bench mariadb command
 
 ## Installation & Usage
 
@@ -74,7 +74,7 @@ cargo build --release
 npx @modelcontextprotocol/inspector -- ./target/release/frappe_mcp --config frappe-mcp.conf run
 ```
 
-Available test methods include all tools listed above: `find_symbols`, `get_function_signature`, `get_doctype`, `create_doctype_template`, `run_tests`, `analyze_links`, `create_web_page`, `find_field_usage`, `run_bench_command`, `get_doctype_db_schema`, `run_mariadb_command`
+Available test methods include all tools listed above: `find_symbols`, `get_function_signature`, `get_doctype`, `create_doctype_template`, `run_tests`, `analyze_links`, `create_web_page`, `find_field_usage`, `run_bench_command`, `get_doctype_db_schema`, `run_db_command`
 
 ### Configuration
 

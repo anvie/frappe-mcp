@@ -441,13 +441,13 @@ impl ProjectExplorer {
         functools::get_doctype_db_schema(&self.config, &self.anal.lock().unwrap(), &args.name)
     }
 
-    /// run_mariadb_command: Execute SQL query via bench mariadb command
+    /// run_db_command: Execute SQL query via bench mariadb command
     #[tool(description = "Execute SQL query via bench mariadb command")]
-    fn run_mariadb_command(
+    fn run_db_command(
         &self,
         Parameters(args): Parameters<RunMariadbCommandArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::run_mariadb_command(&self.config, &self.anal.lock().unwrap(), &args.sql)
+        functools::run_db_command(&self.config, &self.anal.lock().unwrap(), &args.sql)
     }
 
     /// bench_execute: Execute Frappe function via bench execute command
@@ -793,7 +793,7 @@ mod tests {
         assert!(r.has_route("find_field_usage"));
         assert!(r.has_route("run_bench_command"));
         assert!(r.has_route("bench_execute"));
-        assert!(r.has_route("run_mariadb_command"));
+        assert!(r.has_route("run_db_command"));
     }
 
     // #[tokio::test]
