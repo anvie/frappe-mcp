@@ -18,39 +18,6 @@ use std::io::{BufRead, BufReader};
 
 type McpResult = Result<CallToolResult, McpError>;
 
-fn read_code_snippet(
-    file_path: &str,
-    target_line: usize,
-    context_lines: usize,
-) -> Option<Vec<(usize, String)>> {
-    let file = fs::File::open(file_path).ok()?;
-    let reader = BufReader::new(file);
-    let mut lines: Vec<(usize, String)> = Vec::new();
-
-    let start_line = target_line.saturating_sub(context_lines);
-    let end_line = target_line + context_lines;
-
-    for (idx, line_result) in reader.lines().enumerate() {
-        let line_number = idx + 1;
-
-        if line_number >= start_line && line_number <= end_line {
-            if let Ok(line) = line_result {
-                lines.push((line_number, line));
-            }
-        }
-
-        if line_number > end_line {
-            break;
-        }
-    }
-
-    if lines.is_empty() {
-        None
-    } else {
-        Some(lines)
-    }
-}
-
 pub fn find_field_usage(
     _config: &Config,
     anal: &AnalyzedData,
@@ -146,6 +113,39 @@ pub fn find_field_usage(
     mcp_return!(result.join("\n"))
 }
 
+fn read_code_snippet(
+    file_path: &str,
+    target_line: usize,
+    context_lines: usize,
+) -> Option<Vec<(usize, String)>> {
+    let file = fs::File::open(file_path).ok()?;
+    let reader = BufReader::new(file);
+    let mut lines: Vec<(usize, String)> = Vec::new();
+
+    let start_line = target_line.saturating_sub(context_lines);
+    let end_line = target_line + context_lines;
+
+    for (idx, line_result) in reader.lines().enumerate() {
+        let line_number = idx + 1;
+
+        if line_number >= start_line && line_number <= end_line {
+            if let Ok(line) = line_result {
+                lines.push((line_number, line));
+            }
+        }
+
+        if line_number > end_line {
+            break;
+        }
+    }
+
+    if lines.is_empty() {
+        None
+    } else {
+        Some(lines)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,7 +165,7 @@ mod tests {
         //         .map(|(n, l)| format!("{}: {}", n, l))
         //         .collect::<Vec<String>>()
         //         .join("\n")
-        );
+        // );
 
         // Should have 5 lines total (target line 9 + 2 before + 2 after)
         assert_eq!(lines.len(), 5);

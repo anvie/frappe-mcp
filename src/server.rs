@@ -453,6 +453,7 @@ impl ProjectExplorer {
     /// bench_execute: Execute Frappe function via bench execute command
     #[tool(
         description = "Execute Frappe function via bench execute command with optional args and kwargs.\n\
+        You don't need to escape quotes inside args.\n\
         Example: bench_execute(frappe.db.get_list, Invoice, {fields:[\"invoice_code\"]})"
     )]
     fn bench_execute(
