@@ -16,6 +16,7 @@ use crate::config::Config;
 use regex::Regex;
 use rmcp::{model::*, ErrorData as McpError};
 use std::fs;
+use std::io::{BufRead, BufReader};
 use walkdir::WalkDir;
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -229,29 +230,90 @@ pub fn find_symbols(
         let display_count = top_matches.len();
         let header = format!("Found {} symbols matching '{}':\n", display_count, name);
 
-        let matches_str = if fuzzy {
-            // For fuzzy matching, show scores
-            top_matches
-                .iter()
-                .map(|m| {
-                    format!(
-                        "- {}:{}: {} (score: {:.1})",
-                        m.path, m.line_no, m.content, m.score
-                    )
-                })
-                .collect::<Vec<String>>()
-                .join("\n")
-        } else {
-            // For exact matching, don't show scores
-            top_matches
-                .iter()
-                .map(|m| format!("- {}:{}: {}", m.path, m.line_no, m.content))
-                .collect::<Vec<String>>()
-                .join("\n")
-        };
+        let mut matches_str = Vec::new();
+        for (idx, m) in top_matches.iter().enumerate() {
+            matches_str.push(String::new());
 
-        format!("{}{}", header, matches_str)
+            if fuzzy {
+                matches_str.push(format!(
+                    "{}. In file '{}' at line {} (score: {:.1}):",
+                    idx + 1,
+                    m.path,
+                    m.line_no,
+                    m.score
+                ));
+            } else {
+                matches_str.push(format!(
+                    "{}. In file '{}' at line {}:",
+                    idx + 1,
+                    m.path,
+                    m.line_no
+                ));
+            }
+
+            // Try to read the code snippet
+            let full_path = format!("{}/{}", config.app_absolute_path, m.path);
+            if let Some(snippet_lines) = read_code_snippet(&full_path, m.line_no, 2) {
+                // Find the maximum line number width for proper alignment
+                let max_line_width = snippet_lines
+                    .iter()
+                    .map(|(line_no, _)| line_no.to_string().len())
+                    .max()
+                    .unwrap_or(1);
+
+                for (line_no, content) in &snippet_lines {
+                    let is_target_line = *line_no == m.line_no;
+                    let arrow = if is_target_line { "→" } else { " " };
+
+                    matches_str.push(format!(
+                        "   {:>width$}: {} {}",
+                        line_no,
+                        arrow,
+                        content,
+                        width = max_line_width
+                    ));
+                }
+            } else {
+                matches_str.push(format!("   [Could not read file content]"));
+            }
+        }
+
+        let matches_string = matches_str.join("\n");
+        format!("{}{}", header, matches_string)
     };
 
     mcp_return!(out)
+}
+
+fn read_code_snippet(
+    file_path: &str,
+    target_line: usize,
+    context_lines: usize,
+) -> Option<Vec<(usize, String)>> {
+    let file = fs::File::open(file_path).ok()?;
+    let reader = BufReader::new(file);
+    let mut lines: Vec<(usize, String)> = Vec::new();
+
+    let start_line = target_line.saturating_sub(context_lines);
+    let end_line = target_line + context_lines;
+
+    for (idx, line_result) in reader.lines().enumerate() {
+        let line_number = idx + 1;
+
+        if line_number >= start_line && line_number <= end_line {
+            if let Ok(line) = line_result {
+                lines.push((line_number, line));
+            }
+        }
+
+        if line_number > end_line {
+            break;
+        }
+    }
+
+    if lines.is_empty() {
+        None
+    } else {
+        Some(lines)
+    }
 }

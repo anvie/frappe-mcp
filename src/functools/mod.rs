@@ -30,7 +30,7 @@ pub use find_field_usage::find_field_usage;
 pub use find_symbols::find_symbols;
 pub use get_doctype::get_doctype;
 pub use get_doctype_db_schema::get_doctype_db_schema;
-pub use get_function_signature::get_function_signature;
+// pub use get_function_signature::get_function_signature;
 pub use run_bench_command::run_bench_command;
 pub use run_db_command::run_db_command;
 pub use run_tests::run_tests;

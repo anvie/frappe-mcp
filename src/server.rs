@@ -285,22 +285,22 @@ impl ProjectExplorer {
         )
     }
 
-    /// get_function_signature: get function signature from project code files by name,
-    /// optionally within a specific module or including built-in Frappe modules.
-    #[tool(description = "Try to extract a function signature from app source files")]
-    fn get_function_signature(
-        &self,
-        Parameters(args): Parameters<GetFunctionSignatureArgs>,
-    ) -> Result<CallToolResult, McpError> {
-        let anal = self.anal.lock().unwrap();
-        functools::get_function_signature(
-            &self.config,
-            &anal,
-            &args.name,
-            args.module,
-            args.builtin,
-        )
-    }
+    ///// get_function_signature: get function signature from project code files by name,
+    ///// optionally within a specific module or including built-in Frappe modules.
+    //#[tool(description = "Try to extract a function signature from app source files")]
+    //fn get_function_signature(
+    //    &self,
+    //    Parameters(args): Parameters<GetFunctionSignatureArgs>,
+    //) -> Result<CallToolResult, McpError> {
+    //    let anal = self.anal.lock().unwrap();
+    //    functools::get_function_signature(
+    //        &self.config,
+    //        &anal,
+    //        &args.name,
+    //        args.module,
+    //        args.builtin,
+    //    )
+    //}
 
     /// get_doctype: get DocType information by name, eg: "Sales Invoice"
     #[tool(description = "Search and get a DocType information (by name) in the app")]
@@ -432,8 +432,10 @@ impl ProjectExplorer {
         )
     }
 
-    /// get_doctype_db_schema: Get the database schema for a specific DocType
-    #[tool(description = "Get the database schema for a specific DocType")]
+    /// get_doctype_db_schema: Get the database table schema for a specific DocType
+    #[tool(
+        description = "Get the database table schema for a specific DocType, this will execute SQL query into the database."
+    )]
     fn get_doctype_db_schema(
         &self,
         Parameters(args): Parameters<GetDoctypeDbSchemaArgs>,
