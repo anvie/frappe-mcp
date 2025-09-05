@@ -251,6 +251,23 @@ pub struct ListDoctypesArgs {
     pub module: Option<String>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct CreateReportTemplateArgs {
+    /// Report name (e.g., "Sales Analysis")
+    pub report_name: String,
+
+    /// Target module name (e.g., "Sales")
+    pub module: String,
+
+    /// Report type: Script Report, Query Report, Report Builder (default: Script Report)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub report_type: Option<String>,
+
+    /// Reference DocType for the report (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ref_doctype: Option<String>,
+}
+
 // -----------------------------
 // Server impl
 // -----------------------------
@@ -505,6 +522,25 @@ impl ProjectExplorer {
         )
     }
 
+    /// create_report_template: Generate report template files for a Frappe Report
+    #[tool(
+        description = "Generate report template files for a Frappe Report including Python logic file (.py), JavaScript filters (.js), JSON metadata (.json), and __init__.py. Creates a complete report structure with sample filters, columns, and data processing logic."
+    )]
+    fn create_report_template(
+        &self,
+        Parameters(args): Parameters<CreateReportTemplateArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        let mut anal = self.anal.lock().unwrap();
+        functools::create_report_template(
+            &self.config,
+            &mut anal,
+            &args.report_name,
+            &args.module,
+            args.report_type,
+            args.ref_doctype,
+        )
+    }
+
     /// list_doctypes: List all available DocTypes in the current Frappe app
     #[tool(
         description = "List all available DocTypes in the current Frappe app, optionally filtered by module"
@@ -535,7 +571,7 @@ impl ServerHandler for ProjectExplorer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, list_doctypes, create_doctype_template, create_test_template, create_web_page, run_tests, analyze_links, find_field_usage, echo. Prompt: example_prompt."
+                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, list_doctypes, create_doctype_template, create_report_template, create_test_template, create_web_page, run_tests, analyze_links, find_field_usage, echo. Prompt: example_prompt."
                     .to_string(),
             ),
         }
@@ -579,6 +615,7 @@ impl ServerHandler for ProjectExplorer {
                     - get_doctype { name, json_only? }\n\
                     - list_doctypes { module? }\n\
                     - create_doctype_template { name, module, fields? }\n\
+                    - create_report_template { report_name, module, report_type?, ref_doctype? }\n\
                     - create_test_template { doctype, doctype_dependencies? }\n\
                     - create_web_page { path, title?, include_css?, include_js? }\n\
                     - run_tests { module?, doctype?, test_type? }\n\

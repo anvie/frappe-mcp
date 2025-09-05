@@ -43,4 +43,3 @@ pub fn bench_execute(
         .map_err(|e| McpError::new(ErrorCode::INTERNAL_ERROR, format!("{}", e), None))
         .and_then(|output| mcp_return!(output))
 }
-

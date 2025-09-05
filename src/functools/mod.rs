@@ -12,6 +12,7 @@
 mod analyze_links;
 mod bench_execute;
 mod create_doctype_template;
+mod create_report_template;
 mod create_test_template;
 mod create_web_page;
 mod find_field_usage;
@@ -27,6 +28,7 @@ mod run_tests;
 pub use analyze_links::analyze_links;
 pub use bench_execute::bench_execute;
 pub use create_doctype_template::{create_doctype_template, DoctypeSettings, FieldDefinition};
+pub use create_report_template::create_report_template;
 pub use create_test_template::create_test_template;
 pub use create_web_page::create_web_page;
 pub use find_field_usage::find_field_usage;

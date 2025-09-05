@@ -91,4 +91,3 @@ pub fn list_doctypes(
 
     mcp_return!(result.join("\n"))
 }
-
