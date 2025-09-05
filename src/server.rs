@@ -244,6 +244,13 @@ pub struct CreateTestTemplateArgs {
     pub doctype_dependencies: Option<Vec<String>>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct ListDoctypesArgs {
+    /// Optional module filter to list DocTypes only from a specific module
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<String>,
+}
+
 // -----------------------------
 // Server impl
 // -----------------------------
@@ -497,6 +504,18 @@ impl ProjectExplorer {
             args.doctype_dependencies,
         )
     }
+
+    /// list_doctypes: List all available DocTypes in the current Frappe app
+    #[tool(
+        description = "List all available DocTypes in the current Frappe app, optionally filtered by module"
+    )]
+    fn list_doctypes(
+        &self,
+        Parameters(args): Parameters<ListDoctypesArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
+        functools::list_doctypes(&self.config, &anal, args.module)
+    }
 }
 
 // -----------------------------
@@ -516,7 +535,7 @@ impl ServerHandler for ProjectExplorer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, create_doctype_template, create_test_template, create_web_page, run_tests, analyze_links, find_field_usage, echo. Prompt: example_prompt."
+                "Frappe Based Project Explorer server. Tools: find_symbols, get_function_signature, get_doctype, list_doctypes, create_doctype_template, create_test_template, create_web_page, run_tests, analyze_links, find_field_usage, echo. Prompt: example_prompt."
                     .to_string(),
             ),
         }
@@ -558,6 +577,7 @@ impl ServerHandler for ProjectExplorer {
                     - find_symbols { name, search_in?, fuzzy?, limit? }\n\
                     - get_function_signature { name, module?, builtin? }\n\
                     - get_doctype { name, json_only? }\n\
+                    - list_doctypes { module? }\n\
                     - create_doctype_template { name, module, fields? }\n\
                     - create_test_template { doctype, doctype_dependencies? }\n\
                     - create_web_page { path, title?, include_css?, include_js? }\n\
@@ -826,6 +846,7 @@ mod tests {
         assert!(r.has_route("bench_execute"));
         assert!(r.has_route("run_db_command"));
         assert!(r.has_route("create_test_template"));
+        assert!(r.has_route("list_doctypes"));
     }
 
     // #[tokio::test]
