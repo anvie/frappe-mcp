@@ -11,9 +11,9 @@
 // from Nuwaira.
 #![allow(dead_code)]
 
-use crate::analyze::AnalyzedData;
 use crate::config::Config;
 use crate::shellutil;
+use crate::{analyze::AnalyzedData, stringutil::trim_quotes};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -29,7 +29,7 @@ pub fn bench_execute(
 
     if let Some(args_str) = args {
         command_args.push("--args".to_string());
-        command_args.push(args_str.to_string());
+        command_args.push(trim_quotes(args_str).to_string());
     }
 
     if let Some(kwargs_str) = kwargs {

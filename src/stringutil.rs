@@ -140,9 +140,35 @@ pub fn generate_abbrev(name: &str) -> String {
     abbrev
 }
 
+/// Trim leading and trailing quotes (single or double) from a string.
+pub fn trim_quotes(s: &str) -> &str {
+    let bytes = s.as_bytes();
+    if bytes.len() >= 2 {
+        let first = bytes[0];
+        let last = bytes[bytes.len() - 1];
+        if (first == b'"' && last == b'"') || (first == b'\'' && last == b'\'') {
+            return &s[1..s.len() - 1];
+        }
+    }
+    s
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_trim_quotes() {
+        assert_eq!(trim_quotes(r#""hello""#), "hello");
+        assert_eq!(trim_quotes(r#"'world'"#), "world");
+        assert_eq!(trim_quotes(r#""mixed'"#), r#""mixed'"#);
+        assert_eq!(trim_quotes("noquotes"), "noquotes");
+        assert_eq!(trim_quotes("''"), "");
+        assert_eq!(trim_quotes("\"\""), "");
+        assert_eq!(trim_quotes("'"), "'");
+        assert_eq!(trim_quotes("\""), "\"");
+    }
+
     #[test]
     fn test_to_snakec() {
         let cases = vec![

@@ -69,7 +69,7 @@ fn parse_args() -> (Args, Config) {
         exit(1);
     });
 
-    return (args, config);
+    (args, config)
 }
 
 #[tokio::main]

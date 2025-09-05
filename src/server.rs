@@ -718,6 +718,8 @@ fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemT
     let app_path = Path::new(&config.app_absolute_path);
     let modules_txt = app_path.join(&config.app_relative_path).join("modules.txt");
 
+    println!("Checking doctype files in app path: {:?}", app_path);
+
     // Read modules.txt to get module list
     let modules_content = match fs::read_to_string(&modules_txt) {
         Ok(content) => content,
@@ -733,6 +735,10 @@ fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemT
         let module_dir = to_snakec(module_title);
         let module_path = app_path.join(&config.app_relative_path).join(&module_dir);
 
+        println!("Checking module: {}", module_title);
+        println!("Module path: {:?}", module_path);
+        println!("Module dir: {}", module_dir);
+
         // Check doctype directory
         let doctype_path = module_path.join("doctype");
         // tracing::debug!("Checking doctype path: {:?}", doctype_path);
@@ -743,6 +749,7 @@ fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemT
         // Check each doctype directory
         if let Ok(entries) = fs::read_dir(&doctype_path) {
             for entry in entries.flatten() {
+                println!("reading entry: {:?}", entry.path());
                 if !entry.file_type().map_or(false, |ft| ft.is_dir()) {
                     continue;
                 }
