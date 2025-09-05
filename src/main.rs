@@ -80,7 +80,7 @@ async fn main() {
         CommandEnum::Analyze { app_dir } => {
             // Perform analysis and output to the specified file
             let output = "analyzed_output.dat";
-            let relative_path = format!("{}", config.app_relative_path,);
+            let relative_path = config.app_relative_path.to_string();
             if let Err(e) = analyze::analyze_frappe_app(&app_dir, &relative_path, output) {
                 eprintln!("Analysis error: {}", e);
                 exit(1);

@@ -12,9 +12,9 @@
 #![allow(dead_code)]
 use std::sync::{Arc, Mutex};
 
-use crate::analyze::AnalyzedData;
 use crate::config::Config;
 use crate::functools;
+use crate::{analyze::AnalyzedData, stringutil::to_snakec};
 use rmcp::{
     handler::server::{router::prompt::PromptRouter, tool::ToolRouter, wrapper::Parameters},
     model::*,
@@ -730,7 +730,7 @@ fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemT
             continue;
         }
 
-        let module_dir = module_title.to_lowercase();
+        let module_dir = to_snakec(module_title);
         let module_path = app_path.join(&config.app_relative_path).join(&module_dir);
 
         // Check doctype directory
@@ -742,39 +742,34 @@ fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemT
 
         // Check each doctype directory
         if let Ok(entries) = fs::read_dir(&doctype_path) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if !entry.file_type().map_or(false, |ft| ft.is_dir()) {
-                        continue;
-                    }
+            for entry in entries.flatten() {
+                if !entry.file_type().map_or(false, |ft| ft.is_dir()) {
+                    continue;
+                }
 
-                    let doctype_name = entry.file_name().to_string_lossy().to_string();
-                    if doctype_name.is_empty()
-                        || ["__pycache__", ".git"].contains(&doctype_name.as_str())
-                    {
-                        continue;
-                    }
+                let doctype_name = entry.file_name().to_string_lossy().to_string();
+                if doctype_name.is_empty()
+                    || ["__pycache__", ".git"].contains(&doctype_name.as_str())
+                {
+                    continue;
+                }
 
-                    let doctype_dir = entry.path();
+                let doctype_dir = entry.path();
 
-                    // Check .py, .js, and .json files
-                    let files_to_check = vec![
-                        doctype_dir.join(format!("{}.py", &doctype_name)),
-                        // doctype_dir.join(format!("{}.js", &doctype_name)),
-                        doctype_dir.join(format!("{}.json", &doctype_name)),
-                    ];
+                // Check .py, .js, and .json files
+                let files_to_check = vec![
+                    doctype_dir.join(format!("{}.py", &doctype_name)),
+                    // doctype_dir.join(format!("{}.js", &doctype_name)),
+                    doctype_dir.join(format!("{}.json", &doctype_name)),
+                ];
 
-                    for file_path in files_to_check {
-                        if file_path.exists() {
-                            if let Ok(metadata) = fs::metadata(&file_path) {
-                                if let Ok(mtime) = metadata.modified() {
-                                    if mtime > analysis_mtime {
-                                        tracing::debug!(
-                                            "File {:?} is newer than analysis",
-                                            file_path
-                                        );
-                                        return true;
-                                    }
+                for file_path in files_to_check {
+                    if file_path.exists() {
+                        if let Ok(metadata) = fs::metadata(&file_path) {
+                            if let Ok(mtime) = metadata.modified() {
+                                if mtime > analysis_mtime {
+                                    tracing::debug!("File {:?} is newer than analysis", file_path);
+                                    return true;
                                 }
                             }
                         }
