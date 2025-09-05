@@ -76,11 +76,15 @@ pub fn create_test_template(
     }
 
     let summary = format!(
-        "Test template for '{}' created successfully:\n\n{}\n\nNext steps:\n- Run tests using: bench run-tests --doctype \"{}\"\n- Customize test data in test_records.json\n- Add test methods in test_{}.py",
+        "Test template for '{}' created successfully:\n\n{}\n\n\
+            Next steps:\n\
+            - Customize test data in test_records.json\n\
+            - Add test methods in test_{}.py\n\
+            - Run tests using: bench run-tests --doctype \"{}\"",
         doctype,
         result.join("\n"),
+        snake_name,
         doctype,
-        snake_name
     );
 
     mcp_return!(summary)
@@ -317,4 +321,3 @@ class Test{}(FrappeTestCase):
         class_name
     )
 }
-
