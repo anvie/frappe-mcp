@@ -140,6 +140,7 @@ pub fn generate_abbrev(name: &str) -> String {
     abbrev
 }
 
+#[allow(dead_code)]
 /// Trim leading and trailing quotes (single or double) from a string.
 pub fn trim_quotes(s: &str) -> &str {
     let bytes = s.as_bytes();
