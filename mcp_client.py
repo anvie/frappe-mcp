@@ -38,7 +38,7 @@ def send_request(request):
     return json.loads(body)
 
 print("🚀 MCP test client started. Type 'exit' to quit.")
-print("Available methods: find_symbols, get_function_signature, get_doctype")
+print("Available methods: find_symbols, get_function_signature, get_doctype, list_doctypes")
 
 req_id = 1
 while True:
