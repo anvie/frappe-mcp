@@ -142,7 +142,7 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
 
     let root = &config.app_absolute_path;
 
-    if !doc.meta_file.is_none() {
+    if doc.meta_file.is_some() {
         let json_file = format!("{}/{}", root, doc.meta_file.as_ref().unwrap());
         // deserialize json file to get more info
         tracing::debug!("Parsing DocType metadata from {}", json_file);
@@ -159,7 +159,7 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
             if let Some(is_child) = doc_struct.is_child {
                 result.push(format!("- Is Child Table: {}", is_child));
             }
-            result.push(format!("- Fields:"));
+            result.push("- Fields:".to_string());
             for field in doc_struct.fields {
                 result.push(format!(
                     "  - {} - \"{}\" ({}){}",

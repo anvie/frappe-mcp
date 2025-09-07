@@ -24,6 +24,7 @@ pub fn run_bench_command(config: &Config, _anal: &AnalyzedData, args: &[&str]) -
     if args.contains(&"migrate") {
         tracing::trace!("Removing lock files before migrate");
         let lock_file_path = format!("{}/sites/{}/locks/*", config.frappe_bench_dir, config.site);
+        tracing::trace!("Lock file path: {}", lock_file_path);
         // delete all files inside the lock_file_path
         // iterate over all files in the lock_file_path and delete them
         for entry in glob::glob(&lock_file_path).unwrap() {
