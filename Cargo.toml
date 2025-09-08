@@ -4,6 +4,10 @@ edition = "2018"
 name = "frappe_mcp"
 version = "0.0.1"
 
+[lib]
+name = "frappe_mcp"
+path = "src/lib.rs"
+
 [dependencies]
 
 clap = { version = "4.0.13", features = ["derive"] }
@@ -26,3 +30,8 @@ futures = "0.3.31"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 chrono = { version = "0.4", features = ["serde"] }
 glob = "0.3"
+fuzzy-matcher = "0.3.7"
+rust-embed = "8.5"
+
+[dev-dependencies]
+tokio-test = "0.4"

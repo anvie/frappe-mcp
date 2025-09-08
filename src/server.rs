@@ -268,6 +268,38 @@ pub struct CreateReportTemplateArgs {
     pub ref_doctype: Option<String>,
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct SearchFrappeDocsArgs {
+    /// Search query string
+    pub query: String,
+
+    /// Filter by category (e.g., "doctypes", "api", "tutorial")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+
+    /// Use fuzzy search (default: true)
+    #[serde(default = "default_true")]
+    pub fuzzy: bool,
+
+    /// Maximum number of results to return (default: 10)
+    #[serde(default = "default_limit")]
+    pub limit: usize,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_limit() -> usize {
+    10
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct ReadFrappeDocArgs {
+    /// Document path (e.g., "index.md", "doctypes/creating_doctypes.md")
+    pub path: String,
+}
+
 // -----------------------------
 // Server impl
 // -----------------------------
@@ -505,10 +537,31 @@ impl ProjectExplorer {
         )
     }
 
-    /// create_test_template: Generate test template files for a Frappe DocType
+    /// search_frappe_docs: Search embedded Frappe documentation
     #[tool(
-        description = "Generate test template files for a Frappe DocType including test_records.json and test_[doctype_name].py files. The function creates comprehensive test scaffolding with sample data, proper imports, FrappeTestCase inheritance, setUp/tearDown methods, and dependency declarations."
+        description = "Search through embedded Frappe framework documentation. Supports fuzzy and exact search, category filtering, and returns relevant snippets."
     )]
+    fn search_frappe_docs(
+        &self,
+        Parameters(args): Parameters<SearchFrappeDocsArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::search_frappe_docs(&args.query, args.category, args.fuzzy, args.limit)
+    }
+
+    /// read_frappe_doc: Read a specific Frappe documentation file
+    #[tool(
+        description = "Read the full content of a specific Frappe documentation file by its path (e.g., 'index.md', 'doctypes/creating_doctypes.md')"
+    )]
+    fn read_frappe_doc(
+        &self,
+        Parameters(args): Parameters<ReadFrappeDocArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        functools::get_frappe_doc(&args.path)
+    }
+
+    /// create_test_template: Create test template files for a Frappe DocType
+    #[tool(description = "Create test template files for a Frappe DocType. \
+            The function creates comprehensive test scaffolding, proper imports, FrappeTestCase inheritance, setUp/tearDown methods, and dependency declarations.")]
     fn create_test_template(
         &self,
         Parameters(args): Parameters<CreateTestTemplateArgs>,
@@ -522,9 +575,10 @@ impl ProjectExplorer {
         )
     }
 
-    /// create_report_template: Generate report template files for a Frappe Report
+    /// create_report_template: Create report template files for a Frappe Report
     #[tool(
-        description = "Generate report template files for a Frappe Report including Python logic file (.py), JavaScript filters (.js), JSON metadata (.json), and __init__.py. Creates a complete report structure with sample filters, columns, and data processing logic."
+        description = "Create report template files for starting with Frappe Report including Python logic file (.py), JavaScript filters (.js), JSON metadata (.json). \
+            Creates a complete report structure with sample filters, columns, and data processing logic."
     )]
     fn create_report_template(
         &self,

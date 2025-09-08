@@ -11,6 +11,7 @@
 // from Nuwaira.
 use clap::{Parser, Subcommand};
 use std::process::exit;
+use rmcp::model::Content;
 
 #[macro_use]
 mod macros;
@@ -25,6 +26,28 @@ mod shellutil;
 mod stringutil;
 
 use config::Config;
+use rmcp::model::CallToolResult;
+
+fn print_tool_result(result: CallToolResult) {
+    // For CLI output, extract text from content items
+    for content in result.content.iter() {
+        // Extract the raw text content
+        let text = format!("{:?}", content);
+        // Look for the text field in the debug output
+        if let Some(start) = text.find("text: \"") {
+            let start = start + 7; // Skip "text: \""
+            if let Some(end) = text[start..].find("\" }") {
+                let extracted = &text[start..start + end];
+                // Unescape the JSON string
+                let unescaped = extracted.replace("\\n", "\n").replace("\\\"", "\"");
+                println!("{}", unescaped);
+                return;
+            }
+        }
+        // Fallback to debug output
+        println!("{}", text);
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(name = "frappe-mcp")]
@@ -55,6 +78,22 @@ enum CommandEnum {
     },
     /// Run the MCP server
     Run,
+    /// Search Frappe documentation
+    SearchDocs {
+        #[arg(help = "Search query")]
+        query: String,
+        #[arg(short, long, help = "Filter by category (doctypes, api, tutorial)")]
+        category: Option<String>,
+        #[arg(short, long, help = "Use fuzzy search", default_value_t = true)]
+        fuzzy: bool,
+        #[arg(short, long, help = "Maximum number of results", default_value_t = 10)]
+        limit: usize,
+    },
+    /// Read a specific Frappe documentation file
+    ReadDoc {
+        #[arg(help = "Document path (e.g., index.md, doctypes/creating_doctypes.md)")]
+        path: String,
+    },
     /// Print version info
     Version,
 }
@@ -89,6 +128,30 @@ async fn main() {
             exit(1);
         }
         CommandEnum::Run => {}
+        CommandEnum::SearchDocs { query, category, fuzzy, limit } => {
+            match functools::search_frappe_docs(&query, category, fuzzy, limit) {
+                Ok(result) => {
+                    print_tool_result(result);
+                }
+                Err(e) => {
+                    eprintln!("Search error: {}", e.message);
+                    exit(1);
+                }
+            }
+            return;
+        }
+        CommandEnum::ReadDoc { path } => {
+            match functools::get_frappe_doc(&path) {
+                Ok(result) => {
+                    print_tool_result(result);
+                }
+                Err(e) => {
+                    eprintln!("Read error: {}", e.message);
+                    exit(1);
+                }
+            }
+            return;
+        }
         CommandEnum::Version => {
             println!("Version 0.0.1");
             return;

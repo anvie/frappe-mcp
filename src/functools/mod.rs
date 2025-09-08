@@ -24,6 +24,7 @@ mod list_doctypes;
 mod run_bench_command;
 mod run_db_command;
 mod run_tests;
+mod search_frappe_docs;
 
 pub use analyze_links::analyze_links;
 pub use bench_execute::bench_execute;
@@ -40,3 +41,4 @@ pub use list_doctypes::list_doctypes;
 pub use run_bench_command::run_bench_command;
 pub use run_db_command::run_db_command;
 pub use run_tests::run_tests;
+pub use search_frappe_docs::{search_frappe_docs, get_frappe_doc, list_frappe_docs};

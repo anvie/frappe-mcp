@@ -20,6 +20,8 @@ A Model Context Protocol (MCP) server designed to help AI agents understand and 
 - **`find_symbols`**: Search for symbols across the app source files with fuzzy matching support
 - **`get_function_signature`**: Extract function signatures from app source files, optionally within specific modules
 - **`find_field_usage`**: Search for references to specific DocType fields in code
+- **`search_frappe_docs`**: Search embedded Frappe framework documentation with fuzzy matching and category filtering
+- **`read_frappe_doc`**: Read the full content of a specific Frappe documentation file by path
 
 ### DocType Management
 
@@ -74,7 +76,7 @@ cargo build --release
 npx @modelcontextprotocol/inspector -- ./target/release/frappe_mcp --config frappe-mcp.conf run
 ```
 
-Available test methods include all tools listed above: `find_symbols`, `get_function_signature`, `get_doctype`, `create_doctype_template`, `run_tests`, `analyze_links`, `create_web_page`, `find_field_usage`, `run_bench_command`, `get_doctype_db_schema`, `run_db_command`
+Available test methods include all tools listed above: `find_symbols`, `get_function_signature`, `get_doctype`, `create_doctype_template`, `run_tests`, `analyze_links`, `create_web_page`, `find_field_usage`, `run_bench_command`, `get_doctype_db_schema`, `run_db_command`, `search_frappe_docs`, `read_frappe_doc`
 
 ### Configuration
 
@@ -103,6 +105,39 @@ cargo run -- --config frappe-mcp.conf analyze --app-dir /path/to/frappe-bench/ap
 ```
 
 This generates an `analyzed_output.dat` file with structured information about your app's modules and DocTypes.
+
+## CLI Documentation Search
+
+The server includes built-in CLI commands for searching embedded Frappe documentation:
+
+### Search Documentation
+```bash
+# Search for documentation about DocTypes
+cargo run -- search-docs "DocType" --category doctypes --limit 5
+
+# Fuzzy search for API documentation
+cargo run -- search-docs "databse" --category api --fuzzy
+
+# Search across all categories
+cargo run -- search-docs "getting started"
+```
+
+### Read Specific Document
+```bash
+# Read the main documentation index
+cargo run -- read-doc "index.md"
+
+# Read specific documentation file
+cargo run -- read-doc "doctypes/creating_doctypes.md"
+
+# Read API documentation
+cargo run -- read-doc "api/database_api.md"
+```
+
+### CLI Options
+- `--category`: Filter by category (`doctypes`, `api`, `tutorial`)
+- `--fuzzy`: Enable fuzzy search (default: true)
+- `--limit`: Maximum number of results (default: 10)
 
 ## Project Structure
 
