@@ -231,20 +231,7 @@ fn create_json_metadata(
     serde_json::to_string_pretty(&json).unwrap_or_else(|_| "{}".to_string())
 }
 
-/// Generate Python type hints for fields, example output:
-///    # begin: auto-generated types
-///    # This code is auto-generated. Do not modify anything in this block.
-///
-///    from typing import TYPE_CHECKING
-///
-///    if TYPE_CHECKING:
-///        from frappe.types import DF
-///
-///        bank_account: DF.Link | None
-///        card_number: DF.Data | None
-///        status: DF.Literal["Active", "Suspended", "Disabled"]
-///        unique_code: DF.Data | None
-///    # end: auto-generated types
+/// Generate Python type hints for fields in Python controller.
 ///
 fn generate_field_types(fields: &[FieldDefinition]) -> String {
     let mut types = Vec::new();
