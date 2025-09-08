@@ -14,7 +14,9 @@ use fuzzy_matcher::FuzzyMatcher;
 use rmcp::{model::*, ErrorData as McpError};
 use rust_embed::RustEmbed;
 use serde_json::json;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 #[derive(RustEmbed)]
 #[folder = "frappe_docs/"]
@@ -22,10 +24,45 @@ struct FrappeDocs;
 
 #[derive(Debug)]
 struct DocEntry {
+    id: String,
+    #[allow(dead_code)]
     path: String,
     title: String,
     content: String,
     category: String,
+}
+
+// Simple hash-based ID generation
+fn path_to_id(path: &str) -> String {
+    let mut hasher = DefaultHasher::new();
+    path.hash(&mut hasher);
+    format!("{:08x}", hasher.finish()).chars().take(6).collect()
+}
+
+// Global mapping for ID resolution
+lazy_static::lazy_static! {
+    static ref ID_TO_PATH_MAP: std::sync::Mutex<HashMap<String, String>> = std::sync::Mutex::new(HashMap::new());
+}
+
+fn initialize_id_mapping() {
+    let mut map = ID_TO_PATH_MAP.lock().unwrap();
+    if !map.is_empty() {
+        return; // Already initialized
+    }
+
+    for file in FrappeDocs::iter() {
+        let path = file.to_string();
+        if path.ends_with(".md") {
+            let id = path_to_id(&path);
+            map.insert(id, path);
+        }
+    }
+}
+
+fn resolve_id_to_path(id: &str) -> Option<String> {
+    initialize_id_mapping();
+    let map = ID_TO_PATH_MAP.lock().unwrap();
+    map.get(id).cloned()
 }
 
 pub fn search_frappe_docs(
@@ -35,39 +72,40 @@ pub fn search_frappe_docs(
     limit: usize,
 ) -> Result<CallToolResult, McpError> {
     let mut docs = Vec::new();
-    
+
     // Load all embedded documents
     for file in FrappeDocs::iter() {
         let path = file.to_string();
-        
+
         // Skip non-markdown files
         if !path.ends_with(".md") {
             continue;
         }
-        
+
         // Get file content
         if let Some(content_data) = FrappeDocs::get(&path) {
-            let content = std::str::from_utf8(content_data.data.as_ref())
-                .map_err(|e| McpError {
+            let content =
+                std::str::from_utf8(content_data.data.as_ref()).map_err(|e| McpError {
                     code: rmcp::model::ErrorCode(-32603),
                     message: format!("Failed to read document: {}", e).into(),
                     data: None,
                 })?;
-            
+
             // Extract title from first H1 or filename
             let title = extract_title(content, &path);
-            
+
             // Extract category from path
             let doc_category = extract_category(&path);
-            
+
             // Filter by category if specified
             if let Some(ref cat) = category {
                 if !doc_category.eq_ignore_ascii_case(cat) {
                     continue;
                 }
             }
-            
+
             docs.push(DocEntry {
+                id: path_to_id(&path),
                 path: path.clone(),
                 title,
                 content: content.to_string(),
@@ -75,41 +113,41 @@ pub fn search_frappe_docs(
             });
         }
     }
-    
+
     // Search through documents
     let mut results = Vec::new();
-    
+
     if fuzzy {
         // Fuzzy search using SkimMatcherV2
         let matcher = SkimMatcherV2::default();
         let mut scored_results: Vec<(i64, &DocEntry)> = Vec::new();
-        
+
         for doc in &docs {
             let mut max_score = 0i64;
-            
+
             // Score against title
             if let Some(score) = matcher.fuzzy_match(&doc.title, query) {
                 max_score = max_score.max(score * 2); // Boost title matches
             }
-            
+
             // Score against content
             if let Some(score) = matcher.fuzzy_match(&doc.content, query) {
                 max_score = max_score.max(score);
             }
-            
+
             if max_score > 0 {
                 scored_results.push((max_score, doc));
             }
         }
-        
+
         // Sort by score (highest first)
         scored_results.sort_by(|a, b| b.0.cmp(&a.0));
-        
+
         // Take top results
         for (score, doc) in scored_results.iter().take(limit) {
             let snippet = extract_snippet(&doc.content, query, 150);
             results.push(json!({
-                "path": doc.path,
+                "id": doc.id,
                 "title": doc.title,
                 "category": doc.category,
                 "score": score,
@@ -119,27 +157,27 @@ pub fn search_frappe_docs(
     } else {
         // Exact search (case-insensitive)
         let query_lower = query.to_lowercase();
-        
+
         for doc in &docs {
             let title_lower = doc.title.to_lowercase();
             let content_lower = doc.content.to_lowercase();
-            
+
             if title_lower.contains(&query_lower) || content_lower.contains(&query_lower) {
                 let snippet = extract_snippet(&doc.content, query, 150);
                 results.push(json!({
-                    "path": doc.path,
+                    "id": doc.id,
                     "title": doc.title,
                     "category": doc.category,
                     "snippet": snippet,
                 }));
-                
+
                 if results.len() >= limit {
                     break;
                 }
             }
         }
     }
-    
+
     // Build response
     let response = if results.is_empty() {
         json!({
@@ -154,9 +192,9 @@ pub fn search_frappe_docs(
             "total": results.len()
         })
     };
-    
+
     Ok(CallToolResult::success(vec![Content::text(
-        serde_json::to_string_pretty(&response).unwrap_or_else(|_| "{}".to_string())
+        serde_json::to_string_pretty(&response).unwrap_or_else(|_| "{}".to_string()),
     )]))
 }
 
@@ -167,7 +205,7 @@ fn extract_title(content: &str, path: &str) -> String {
             return line.trim_start_matches('#').trim().to_string();
         }
     }
-    
+
     // Fallback to filename without extension
     path.split('/')
         .last()
@@ -199,19 +237,19 @@ fn extract_category(path: &str) -> String {
 fn extract_snippet(content: &str, query: &str, max_length: usize) -> String {
     let content_lower = content.to_lowercase();
     let query_lower = query.to_lowercase();
-    
+
     // Find the position of the query in the content
     if let Some(pos) = content_lower.find(&query_lower) {
         // Calculate snippet boundaries
         let start = pos.saturating_sub(50);
         let end = (pos + query.len() + 100).min(content.len());
-        
+
         // Extract snippet
         let snippet = &content[start..end];
-        
+
         // Clean up snippet
         let mut result = snippet.trim().to_string();
-        
+
         // Add ellipsis if truncated
         if start > 0 {
             result = format!("...{}", result);
@@ -219,7 +257,7 @@ fn extract_snippet(content: &str, query: &str, max_length: usize) -> String {
         if end < content.len() {
             result = format!("{}...", result);
         }
-        
+
         // Remove markdown formatting for readability
         result = result
             .replace("###", "")
@@ -231,13 +269,13 @@ fn extract_snippet(content: &str, query: &str, max_length: usize) -> String {
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ");
-        
+
         // Truncate if still too long
         if result.len() > max_length {
             result.truncate(max_length);
             result.push_str("...");
         }
-        
+
         result
     } else {
         // If query not found, return first part of content
@@ -247,67 +285,80 @@ fn extract_snippet(content: &str, query: &str, max_length: usize) -> String {
             .take(2)
             .collect::<Vec<_>>()
             .join(" ");
-        
+
         if snippet.len() > max_length {
             snippet.truncate(max_length);
             snippet.push_str("...");
         }
-        
+
         snippet
     }
 }
 
-pub fn get_frappe_doc(path: &str) -> Result<CallToolResult, McpError> {
-    // Get specific document by path
-    if let Some(content_data) = FrappeDocs::get(path) {
-        let content = std::str::from_utf8(content_data.data.as_ref())
-            .map_err(|e| McpError {
-                code: rmcp::model::ErrorCode(-32603),
-                message: format!("Failed to read document: {}", e).into(),
-                data: None,
-            })?;
-        
-        Ok(CallToolResult::success(vec![Content::text(content.to_string())]))
+pub fn get_frappe_doc(id: &str) -> Result<CallToolResult, McpError> {
+    // Resolve ID to path
+    let path = resolve_id_to_path(id).ok_or_else(|| McpError {
+        code: rmcp::model::ErrorCode(-32602),
+        message: format!("Document ID not found: {}", id).into(),
+        data: None,
+    })?;
+
+    // Get specific document by resolved path
+    if let Some(content_data) = FrappeDocs::get(&path) {
+        let content = std::str::from_utf8(content_data.data.as_ref()).map_err(|e| McpError {
+            code: rmcp::model::ErrorCode(-32603),
+            message: format!("Failed to read document: {}", e).into(),
+            data: None,
+        })?;
+
+        Ok(CallToolResult::success(vec![Content::text(
+            content.to_string(),
+        )]))
     } else {
         Err(McpError {
             code: rmcp::model::ErrorCode(-32602),
-            message: format!("Document not found: {}", path).into(),
+            message: format!(
+                "Document not found for ID: {} (resolved path: {})",
+                id, path
+            )
+            .into(),
             data: None,
         })
     }
 }
 
+#[allow(dead_code)]
 pub fn list_frappe_docs(category: Option<String>) -> Result<CallToolResult, McpError> {
     let mut categories: HashMap<String, Vec<String>> = HashMap::new();
-    
+
     for file in FrappeDocs::iter() {
         let path = file.to_string();
-        
+
         if !path.ends_with(".md") {
             continue;
         }
-        
+
         let doc_category = extract_category(&path);
-        
+
         // Filter by category if specified
         if let Some(ref cat) = category {
             if !doc_category.eq_ignore_ascii_case(cat) {
                 continue;
             }
         }
-        
+
         categories
             .entry(doc_category)
             .or_insert_with(Vec::new)
             .push(path);
     }
-    
+
     let response = json!({
         "categories": categories,
         "total": categories.values().map(|v| v.len()).sum::<usize>()
     });
-    
+
     Ok(CallToolResult::success(vec![Content::text(
-        serde_json::to_string_pretty(&response).unwrap_or_else(|_| "{}".to_string())
+        serde_json::to_string_pretty(&response).unwrap_or_else(|_| "{}".to_string()),
     )]))
 }

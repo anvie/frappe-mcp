@@ -11,9 +11,9 @@
 // from Nuwaira.
 #![allow(dead_code)]
 
+use crate::analyze::AnalyzedData;
 use crate::config::Config;
 use crate::shellutil;
-use crate::analyze::AnalyzedData;
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;

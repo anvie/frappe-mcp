@@ -21,7 +21,7 @@ A Model Context Protocol (MCP) server designed to help AI agents understand and 
 - **`get_function_signature`**: Extract function signatures from app source files, optionally within specific modules
 - **`find_field_usage`**: Search for references to specific DocType fields in code
 - **`search_frappe_docs`**: Search embedded Frappe framework documentation with fuzzy matching and category filtering
-- **`read_frappe_doc`**: Read the full content of a specific Frappe documentation file by path
+- **`read_frappe_doc`**: Read the full content of a specific Frappe documentation file by ID
 
 ### DocType Management
 
@@ -110,6 +110,8 @@ This generates an `analyzed_output.dat` file with structured information about y
 
 The server includes built-in CLI commands for searching embedded Frappe documentation:
 
+**Note**: Documents are referenced by short hash-based IDs (e.g., "48b014") rather than file paths to avoid confusion with filesystem operations. Use `search-docs` to find document IDs.
+
 ### Search Documentation
 ```bash
 # Search for documentation about DocTypes
@@ -124,14 +126,17 @@ cargo run -- search-docs "getting started"
 
 ### Read Specific Document
 ```bash
-# Read the main documentation index
-cargo run -- read-doc "index.md"
+# First, search to get document IDs
+cargo run -- search-docs "Frappe Framework Documentation" --limit=1
 
-# Read specific documentation file
-cargo run -- read-doc "doctypes/creating_doctypes.md"
+# Then read the document using its ID
+cargo run -- read-doc "48b014"  # ID for main documentation index
 
-# Read API documentation
-cargo run -- read-doc "api/database_api.md"
+# Read DocType creation guide
+cargo run -- read-doc "3b7f1e"  # ID for creating_doctypes.md
+
+# Read API documentation  
+cargo run -- read-doc "454ba4"  # ID for database_api.md
 ```
 
 ### CLI Options

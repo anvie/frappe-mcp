@@ -11,7 +11,6 @@
 // from Nuwaira.
 use clap::{Parser, Subcommand};
 use std::process::exit;
-use rmcp::model::Content;
 
 #[macro_use]
 mod macros;
@@ -91,8 +90,8 @@ enum CommandEnum {
     },
     /// Read a specific Frappe documentation file
     ReadDoc {
-        #[arg(help = "Document path (e.g., index.md, doctypes/creating_doctypes.md)")]
-        path: String,
+        #[arg(help = "Document ID (e.g., a7b9c3, d8f2e1). Use search-docs to find IDs.")]
+        id: String,
     },
     /// Print version info
     Version,
@@ -128,7 +127,12 @@ async fn main() {
             exit(1);
         }
         CommandEnum::Run => {}
-        CommandEnum::SearchDocs { query, category, fuzzy, limit } => {
+        CommandEnum::SearchDocs {
+            query,
+            category,
+            fuzzy,
+            limit,
+        } => {
             match functools::search_frappe_docs(&query, category, fuzzy, limit) {
                 Ok(result) => {
                     print_tool_result(result);
@@ -140,8 +144,8 @@ async fn main() {
             }
             return;
         }
-        CommandEnum::ReadDoc { path } => {
-            match functools::get_frappe_doc(&path) {
+        CommandEnum::ReadDoc { id } => {
+            match functools::get_frappe_doc(&id) {
                 Ok(result) => {
                     print_tool_result(result);
                 }

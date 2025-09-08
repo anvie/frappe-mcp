@@ -424,6 +424,7 @@ dependencies = [
  "futures",
  "fuzzy-matcher",
  "glob",
+ "lazy_static",
  "regex",
  "rmcp",
  "rust-embed",

@@ -296,8 +296,8 @@ fn default_limit() -> usize {
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ReadFrappeDocArgs {
-    /// Document path (e.g., "index.md", "doctypes/creating_doctypes.md")
-    pub path: String,
+    /// Document ID (e.g., "a7b9c3", "d8f2e1")
+    pub id: String,
 }
 
 // -----------------------------
@@ -539,7 +539,7 @@ impl ProjectExplorer {
 
     /// search_frappe_docs: Search embedded Frappe documentation
     #[tool(
-        description = "Search through embedded Frappe framework documentation. Supports fuzzy and exact search, category filtering, and returns relevant snippets."
+        description = "Search through Frappe framework documentation. Supports fuzzy and exact search, category filtering, and returns relevant snippets."
     )]
     fn search_frappe_docs(
         &self,
@@ -550,13 +550,13 @@ impl ProjectExplorer {
 
     /// read_frappe_doc: Read a specific Frappe documentation file
     #[tool(
-        description = "Read the full content of a specific Frappe documentation file by its path (e.g., 'index.md', 'doctypes/creating_doctypes.md')"
+        description = "Read the full content of a specific Frappe documentation by its ID (e.g., 'a7b9c3', 'd8f2e1'). Use search_frappe_docs to find document IDs."
     )]
     fn read_frappe_doc(
         &self,
         Parameters(args): Parameters<ReadFrappeDocArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::get_frappe_doc(&args.path)
+        functools::get_frappe_doc(&args.id)
     }
 
     /// create_test_template: Create test template files for a Frappe DocType
