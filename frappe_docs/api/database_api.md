@@ -7,6 +7,7 @@ Frappe provides a powerful database abstraction layer through `frappe.db` that h
 ## Basic Operations
 
 ### Get Single Value
+
 ```python
 # Get a single field value
 value = frappe.db.get_value("Customer", "CUST-0001", "customer_name")
@@ -19,9 +20,10 @@ value = frappe.db.get_value("Customer", {"email": "john@example.com"}, "name")
 ```
 
 ### Get List of Records
+
 ```python
 # Simple list
-customers = frappe.db.get_list("Customer", 
+customers = frappe.db.get_list("Customer",
     fields=["name", "customer_name"],
     filters={"disabled": 0},
     order_by="creation desc",
@@ -39,6 +41,7 @@ orders = frappe.db.get_list("Sales Order",
 ```
 
 ### Get Single Document
+
 ```python
 # Get complete document
 doc = frappe.db.get_doc("Customer", "CUST-0001")
@@ -48,6 +51,7 @@ customer = frappe.db.get("Customer", "CUST-0001", ["customer_name", "email"])
 ```
 
 ### Check Existence
+
 ```python
 # Check if record exists
 exists = frappe.db.exists("Customer", "CUST-0001")
@@ -59,6 +63,7 @@ exists = frappe.db.exists("Customer", {"email": "john@example.com"})
 ## Insert Operations
 
 ### Insert Single Record
+
 ```python
 # Insert new record
 frappe.db.insert({
@@ -77,6 +82,7 @@ frappe.db.commit()
 ```
 
 ### Bulk Insert
+
 ```python
 # Insert multiple records
 records = [
@@ -92,6 +98,7 @@ for record in records:
 ## Update Operations
 
 ### Set Value
+
 ```python
 # Update single field
 frappe.db.set_value("Customer", "CUST-0001", "status", "Active")
@@ -107,10 +114,11 @@ frappe.db.set_value("Customer", {"email": "john@example.com"}, "status", "Inacti
 ```
 
 ### SQL Update
+
 ```python
 # Direct SQL update
 frappe.db.sql("""
-    UPDATE `tabCustomer` 
+    UPDATE `tabCustomer`
     SET credit_limit = credit_limit * 1.1
     WHERE customer_group = 'Premium'
 """)
@@ -119,6 +127,7 @@ frappe.db.sql("""
 ## Delete Operations
 
 ### Delete Records
+
 ```python
 # Delete single record
 frappe.db.delete("Customer", "CUST-0001")
@@ -135,6 +144,7 @@ for name in customers:
 ## Raw SQL Queries
 
 ### Execute SQL
+
 ```python
 # Select query
 result = frappe.db.sql("""
@@ -153,6 +163,7 @@ result = frappe.db.sql("""
 ```
 
 ### Get Single Value from SQL
+
 ```python
 count = frappe.db.sql("""
     SELECT COUNT(*) FROM `tabSales Order`
@@ -163,13 +174,14 @@ count = frappe.db.sql("""
 ## Advanced Queries
 
 ### Aggregation
+
 ```python
 # Count
 count = frappe.db.count("Customer", filters={"disabled": 0})
 
 # Sum
 total = frappe.db.sql("""
-    SELECT SUM(grand_total) 
+    SELECT SUM(grand_total)
     FROM `tabSales Order`
     WHERE status = 'Submitted'
 """)[0][0] or 0
@@ -185,10 +197,11 @@ result = frappe.db.sql("""
 ```
 
 ### Joins
+
 ```python
 # Inner join
 result = frappe.db.sql("""
-    SELECT 
+    SELECT
         so.name,
         so.customer,
         c.customer_name,
@@ -200,7 +213,7 @@ result = frappe.db.sql("""
 
 # Left join with child table
 items = frappe.db.sql("""
-    SELECT 
+    SELECT
         so.name as order_id,
         soi.item_code,
         soi.qty,
@@ -214,15 +227,16 @@ items = frappe.db.sql("""
 ## Transaction Management
 
 ### Commit and Rollback
+
 ```python
 try:
     # Start transaction
     frappe.db.begin()
-    
+
     # Perform operations
     frappe.db.set_value("Customer", "CUST-0001", "credit_limit", 100000)
     frappe.db.insert({"doctype": "Note", "title": "Credit limit updated"})
-    
+
     # Commit transaction
     frappe.db.commit()
 except Exception as e:
@@ -232,6 +246,7 @@ except Exception as e:
 ```
 
 ### Auto Commit
+
 ```python
 # Disable auto-commit
 frappe.db.auto_commit_on_many_writes = 0
@@ -239,7 +254,7 @@ frappe.db.auto_commit_on_many_writes = 0
 # Bulk operations
 for i in range(1000):
     frappe.db.insert({...})
-    
+
 # Manual commit
 frappe.db.commit()
 ```
@@ -247,24 +262,27 @@ frappe.db.commit()
 ## Utility Functions
 
 ### Get Table Columns
+
 ```python
 # Get column names
 columns = frappe.db.get_table_columns("Customer")
 ```
 
 ### Get Database Size
+
 ```python
 # Get table size
 size = frappe.db.sql("""
-    SELECT 
+    SELECT
         ROUND(((data_length + index_length) / 1024 / 1024), 2) AS size_mb
-    FROM information_schema.TABLES 
+    FROM information_schema.TABLES
     WHERE table_schema = DATABASE()
     AND table_name = 'tabSales Order'
 """)[0][0]
 ```
 
 ### Escape Values
+
 ```python
 # Escape string for SQL
 escaped = frappe.db.escape("John's Shop")
@@ -286,19 +304,20 @@ query = f"SELECT * FROM `tabCustomer` WHERE customer_name = {escaped}"
 ## Common Patterns
 
 ### Pagination
+
 ```python
 def get_paginated_data(doctype, page=1, page_size=20):
     start = (page - 1) * page_size
-    
+
     data = frappe.db.get_list(doctype,
         fields=["*"],
         limit=page_size,
         start=start,
         order_by="creation desc"
     )
-    
+
     total = frappe.db.count(doctype)
-    
+
     return {
         "data": data,
         "total": total,
@@ -308,16 +327,18 @@ def get_paginated_data(doctype, page=1, page_size=20):
 ```
 
 ### Bulk Update with Progress
+
 ```python
 def bulk_update_customers():
     customers = frappe.db.get_list("Customer", pluck="name")
-    
+
     for i, customer in enumerate(customers):
         # Update logic
         frappe.db.set_value("Customer", customer, "updated", 1)
-        
+
         # Commit every 100 records
         if i % 100 == 0:
             frappe.db.commit()
             frappe.publish_progress(i / len(customers) * 100)
 ```
+
