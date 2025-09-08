@@ -134,6 +134,7 @@ pub fn create_doctype_template(
             "{}/{}/doctype/{}/{}.json",
             config.app_relative_path, module_snake, snake_name, snake_name
         )),
+        test_file: None,
         module: module.to_string(),
     });
 

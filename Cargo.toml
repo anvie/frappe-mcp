@@ -2,7 +2,7 @@
 authors = ["Robin Syihab <robin@syihab.st>"]
 edition = "2018"
 name = "frappe_mcp"
-version = "0.0.1"
+version = "0.0.2"
 
 [lib]
 name = "frappe_mcp"

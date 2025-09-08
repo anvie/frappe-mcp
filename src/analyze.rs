@@ -23,6 +23,7 @@ pub struct DocType {
     pub backend_file: String,
     pub frontend_file: Option<String>,
     pub meta_file: Option<String>,
+    pub test_file: Option<String>,
     pub module: String,
 }
 
@@ -123,6 +124,7 @@ pub fn analyze_frappe_app(
                         let backend_file = doctype_dir.join(format!("{}.py", &doctype_name));
                         let frontend_file = doctype_dir.join(format!("{}.js", &doctype_name));
                         let meta_file = doctype_dir.join(format!("{}.json", &doctype_name));
+                        let test_file = doctype_dir.join(format!("test_{}.py", &doctype_name));
 
                         if !meta_file.exists() {
                             continue;
@@ -145,14 +147,14 @@ pub fn analyze_frappe_app(
                         doctypes.push(DocType {
                             name: real_doctype_name,
                             backend_file: to_relative_path(
-                                &backend_file.to_string_lossy().to_string(),
-                                &root_sub_path.to_string_lossy().to_string(),
+                                &backend_file.to_string_lossy(),
+                                &root_sub_path.to_string_lossy(),
                                 relative_path,
                             ),
                             frontend_file: if frontend_file.exists() {
                                 Some(to_relative_path(
-                                    &frontend_file.to_string_lossy().to_string(),
-                                    &root_sub_path.to_string_lossy().to_string(),
+                                    &frontend_file.to_string_lossy(),
+                                    &root_sub_path.to_string_lossy(),
                                     relative_path,
                                 ))
                             } else {
@@ -160,8 +162,17 @@ pub fn analyze_frappe_app(
                             },
                             meta_file: if meta_file.exists() {
                                 Some(to_relative_path(
-                                    &meta_file.to_string_lossy().to_string(),
-                                    &root_sub_path.to_string_lossy().to_string(),
+                                    &meta_file.to_string_lossy(),
+                                    &root_sub_path.to_string_lossy(),
+                                    relative_path,
+                                ))
+                            } else {
+                                None
+                            },
+                            test_file: if test_file.exists() {
+                                Some(to_relative_path(
+                                    &test_file.to_string_lossy(),
+                                    &root_sub_path.to_string_lossy(),
                                     relative_path,
                                 ))
                             } else {
@@ -175,7 +186,7 @@ pub fn analyze_frappe_app(
         }
     }
 
-    let symbol_refs = analyze_frappe_field_usage(&root_path.to_string_lossy().to_string());
+    let symbol_refs = analyze_frappe_field_usage(&root_path.to_string_lossy());
     let analysis = Analysis {
         doctypes,
         modules,

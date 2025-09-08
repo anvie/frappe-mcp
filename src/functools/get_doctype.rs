@@ -139,6 +139,9 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
     if let Some(meta_file) = &doc.meta_file {
         result.push(format!("- Metadata: {}", meta_file));
     }
+    if let Some(test_file) = &doc.test_file {
+        result.push(format!("- Test: {}", test_file));
+    }
 
     let root = &config.app_absolute_path;
 
@@ -175,6 +178,15 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
             }
         }
     }
+
+    if doc.test_file.is_some() {
+        result.push(format!(
+            "\nYou can run tests for this DocType using the following command:\n\
+            `frappe_mcp.run_tests({})`",
+            doc.name
+        ));
+    }
+
     let out = if result.is_empty() {
         format!("DocType '{}' not found under '{}'", target, root)
     } else {
