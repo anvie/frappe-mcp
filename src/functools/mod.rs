@@ -41,4 +41,4 @@ pub use list_doctypes::list_doctypes;
 pub use run_bench_command::run_bench_command;
 pub use run_db_command::run_db_command;
 pub use run_tests::run_tests;
-pub use search_frappe_docs::{get_frappe_doc, search_frappe_docs};
+pub use search_frappe_docs::{get_frappe_doc, search_frappe_docs, OutputFormat};

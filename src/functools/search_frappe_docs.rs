@@ -11,12 +11,27 @@
 // from Nuwaira.
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
-use rmcp::{model::*, ErrorData as McpError};
+use rmcp::{model::*, schemars, ErrorData as McpError};
 use rust_embed::RustEmbed;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+pub enum OutputFormat {
+    #[serde(rename = "json")]
+    Json,
+    #[serde(rename = "markdown")]
+    Markdown,
+}
+
+impl Default for OutputFormat {
+    fn default() -> Self {
+        OutputFormat::Json
+    }
+}
 
 #[derive(RustEmbed)]
 #[folder = "frappe_docs/"]
@@ -70,6 +85,7 @@ pub fn search_frappe_docs(
     category: Option<String>,
     fuzzy: bool,
     limit: usize,
+    format: OutputFormat,
 ) -> Result<CallToolResult, McpError> {
     let mut docs = Vec::new();
 
@@ -178,23 +194,72 @@ pub fn search_frappe_docs(
         }
     }
 
-    // Build response
-    let response = if results.is_empty() {
-        json!({
-            "message": format!("No documentation found for query: '{}'", query),
-            "results": [],
-            "total": 0
-        })
-    } else {
-        json!({
-            "message": format!("Found {} result(s) for query: '{}'", results.len(), query),
-            "results": results,
-            "total": results.len()
-        })
+    // Generate output based on format
+    let response_content = match format {
+        OutputFormat::Json => {
+            // JSON format - structured data
+            let response = if results.is_empty() {
+                json!({
+                    "message": format!("No documentation found for query: '{}'", query),
+                    "results": [],
+                    "total": 0
+                })
+            } else {
+                json!({
+                    "message": format!("Found {} result(s) for query: '{}'", results.len(), query),
+                    "results": results,
+                    "total": results.len()
+                })
+            };
+            serde_json::to_string_pretty(&response).unwrap_or_else(|_| "{}".to_string())
+        }
+        OutputFormat::Markdown => {
+            // Markdown format - human-readable
+            if results.is_empty() {
+                format!("# Search Results\n\nNo documentation found for query: **'{}'**\n\n*Try using fuzzy search or different keywords.*", query)
+            } else {
+                let mut markdown = format!(
+                    "# Search Results\n\nFound **{}** result(s) for query: **'{}'**\n\n",
+                    results.len(),
+                    query
+                );
+
+                for (index, result) in results.iter().enumerate() {
+                    let id = result["id"].as_str().unwrap_or("unknown");
+                    let title = result["title"].as_str().unwrap_or("Untitled");
+                    let category = result["category"].as_str().unwrap_or("general");
+                    let snippet = result["snippet"].as_str().unwrap_or("");
+
+                    markdown.push_str(&format!(
+                        "## {}. {} `[{}]`\n\n**ID:** `{}`  \n**Category:** `{}`  \n\n{}\n\n---\n\n",
+                        index + 1,
+                        title,
+                        category,
+                        id,
+                        category,
+                        snippet
+                    ));
+
+                    // Add score for fuzzy search
+                    if let Some(score) = result.get("score") {
+                        let score_line = format!("**Relevance Score:** {}\n\n", score);
+                        markdown = markdown.replace(
+                            &format!("**Category:** `{}`  \n\n", category),
+                            &format!("**Category:** `{}`  \n{}", category, score_line),
+                        );
+                    }
+                }
+
+                markdown.push_str(&format!(
+                    "\n> Use `read_frappe_doc(\"<id>\")` to read the full document content."
+                ));
+                markdown
+            }
+        }
     };
 
     Ok(CallToolResult::success(vec![Content::text(
-        serde_json::to_string_pretty(&response).unwrap_or_else(|_| "{}".to_string()),
+        response_content,
     )]))
 }
 
@@ -311,8 +376,18 @@ pub fn get_frappe_doc(id: &str) -> Result<CallToolResult, McpError> {
             data: None,
         })?;
 
+        // Extract title and category for metadata header
+        let title = extract_title(content, &path);
+        let category = extract_category(&path);
+
+        // Build formatted markdown response with metadata header
+        let formatted_response = format!(
+            "---\n**Document ID:** `{}`  \n**Title:** {}  \n**Category:** `{}`  \n**Source Path:** `{}`  \n---\n\n{}",
+            id, title, category, path, content
+        );
+
         Ok(CallToolResult::success(vec![Content::text(
-            content.to_string(),
+            formatted_response,
         )]))
     } else {
         Err(McpError {

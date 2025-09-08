@@ -87,6 +87,8 @@ enum CommandEnum {
         fuzzy: bool,
         #[arg(short, long, help = "Maximum number of results", default_value_t = 10)]
         limit: usize,
+        #[arg(long, help = "Output format: json or markdown", default_value = "json")]
+        format: String,
     },
     /// Read a specific Frappe documentation file
     ReadDoc {
@@ -132,8 +134,18 @@ async fn main() {
             category,
             fuzzy,
             limit,
+            format,
         } => {
-            match functools::search_frappe_docs(&query, category, fuzzy, limit) {
+            let output_format = match format.as_str() {
+                "json" => functools::OutputFormat::Json,
+                "markdown" => functools::OutputFormat::Markdown,
+                _ => {
+                    eprintln!("Invalid format '{}'. Use 'json' or 'markdown'.", format);
+                    exit(1);
+                }
+            };
+
+            match functools::search_frappe_docs(&query, category, fuzzy, limit, output_format) {
                 Ok(result) => {
                     print_tool_result(result);
                 }

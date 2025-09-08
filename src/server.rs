@@ -284,6 +284,10 @@ pub struct SearchFrappeDocsArgs {
     /// Maximum number of results to return (default: 10)
     #[serde(default = "default_limit")]
     pub limit: usize,
+
+    /// Output format: "json" or "markdown" (default: "json")
+    #[serde(default)]
+    pub format: crate::functools::OutputFormat,
 }
 
 fn default_true() -> bool {
@@ -545,7 +549,13 @@ impl ProjectExplorer {
         &self,
         Parameters(args): Parameters<SearchFrappeDocsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        functools::search_frappe_docs(&args.query, args.category, args.fuzzy, args.limit)
+        functools::search_frappe_docs(
+            &args.query,
+            args.category,
+            args.fuzzy,
+            args.limit,
+            args.format,
+        )
     }
 
     /// read_frappe_doc: Read a specific Frappe documentation file
