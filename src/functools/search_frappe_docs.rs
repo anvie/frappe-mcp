@@ -80,7 +80,7 @@ pub fn search_frappe_docs(
     category: Option<String>,
     fuzzy: bool,
     limit: usize,
-    format: OutputFormat,
+    output_format: OutputFormat,
 ) -> Result<CallToolResult, McpError> {
     let mut docs = Vec::new();
 
@@ -190,7 +190,7 @@ pub fn search_frappe_docs(
     }
 
     // Generate output based on format
-    let response_content = match format {
+    let response_content = match output_format {
         OutputFormat::Json => {
             // JSON format - structured data
             let response = if results.is_empty() {
