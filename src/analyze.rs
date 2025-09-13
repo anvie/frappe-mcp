@@ -11,7 +11,7 @@
 // from Nuwaira.
 
 use crate::refs_finder::{analyze_frappe_field_usage, Output as RefsFinderOutput};
-use crate::stringutil::to_snakec;
+use crate::stringutil::to_snakec_var;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -92,7 +92,7 @@ pub fn analyze_frappe_app(
             continue;
         }
 
-        let module_dir = to_snakec(&module_title);
+        let module_dir = to_snakec_var(&module_title);
         let module_path = root_sub_path.join(&module_dir);
 
         if module_path.exists() && module_path.is_dir() {

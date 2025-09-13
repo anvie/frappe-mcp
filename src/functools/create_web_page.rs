@@ -13,9 +13,11 @@
 use std::fs;
 use std::path::Path;
 
-use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::stringutil::to_snakec;
+use crate::{
+    analyze::AnalyzedData,
+    stringutil::{to_kebabc, to_snakec},
+};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -23,73 +25,71 @@ type McpResult = Result<CallToolResult, McpError>;
 pub fn create_web_page(
     config: &Config,
     _anal: &AnalyzedData,
-    path: &str,
+    slug: &str,
     title: Option<String>,
     include_css: Option<bool>,
     include_js: Option<bool>,
 ) -> McpResult {
-    let full_path = format!(
+    let base_dir = format!(
         "{}/{}/www/{}",
         config.app_absolute_path,
         to_snakec(&config.app_name),
-        path
+        slug
     );
-    let file_path = Path::new(&full_path);
+    let base_dir = Path::new(&base_dir);
+    let index_html = base_dir.join("index.html");
 
-    // Extract filename without extension for title
-    let filename = file_path
-        .file_stem()
-        .and_then(|n| n.to_str())
-        .unwrap_or("Web Page");
-
-    let page_title = title.unwrap_or_else(|| filename.to_string());
+    // Extract filename without extension for title if title is not provided.
+    let page_title = title.unwrap_or_else(|| slug.to_string());
     let css_enabled = include_css.unwrap_or(true);
     let js_enabled = include_js.unwrap_or(true);
 
     // Check if file already exists
-    if file_path.exists() {
-        mcp_return!(format!("File already exists at: {}", full_path));
+    if index_html.exists() {
+        mcp_return!(format!("File already exists at: {}", index_html.display()));
     }
 
     // Create parent directories if they don't exist
-    if let Some(parent) = file_path.parent() {
-        if let Err(e) = fs::create_dir_all(parent) {
+    if !base_dir.exists() {
+        if let Err(e) = fs::create_dir_all(base_dir) {
             mcp_return!(format!(
                 "Failed to create directory {}: {}",
-                parent.display(),
+                base_dir.display(),
                 e
             ));
         }
     }
 
+    let filename = slug.split('/').last().unwrap_or("index").to_string();
+
     let mut result = Vec::new();
 
     // Create HTML file
     let html_content =
-        create_html_boilerplate(&page_title, css_enabled, js_enabled, &to_snakec(filename));
-    if let Err(e) = fs::write(&full_path, html_content) {
+        create_html_boilerplate(&page_title, css_enabled, js_enabled, &to_kebabc(&filename));
+    if let Err(e) = fs::write(&index_html, html_content) {
         mcp_return!(format!("Failed to write HTML file: {}", e));
     }
-    result.push(format!("✓ Created HTML: {}", full_path));
+    result.push(format!("✓ Created HTML: {}", index_html.display()));
 
     // Create CSS file if requested
     if css_enabled {
-        let css_path = full_path.replace(".html", ".css");
-        let css_content = create_css_boilerplate();
+        let css_path = base_dir.join(format!("{}.css", filename));
+        let css_content = create_css_boilerplate(&page_title);
         if let Err(e) = fs::write(&css_path, css_content) {
             mcp_return!(format!("Failed to write CSS file: {}", e));
         }
-        result.push(format!("✓ Created CSS: {}", css_path));
+        result.push(format!("✓ Created CSS: {}", css_path.display()));
     }
 
     // Create JavaScript file if requested
     if js_enabled {
-        let js_path = full_path.replace(".html", ".js");
-        let js_content = create_js_boilerplate(&to_snakec(filename));
+        let js_path = base_dir.join(format!("{}.js", filename));
+        let js_content = create_js_boilerplate(&page_title);
         if let Err(e) = fs::write(&js_path, js_content) {
             mcp_return!(format!("Failed to write JavaScript file: {}", e));
         }
-        result.push(format!("✓ Created JavaScript: {}", js_path));
+        result.push(format!("✓ Created JavaScript: {}", js_path.display()));
     }
 
     let summary = format!(
@@ -127,10 +127,8 @@ fn create_html_boilerplate(
 {{% block head_include %}}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
   <meta name="description" content="">
   <meta name="robots" content="index, follow">
-
 
 <!-- Meta Tags -->
 {{% for tag in meta_tags %}}
@@ -158,31 +156,33 @@ fn create_html_boilerplate(
     </script>
 {{% endblock %}}
 "#,
-        title, css_link, title, js_script
+        title, css_link, js_script, title
     )
 }
 
-fn create_css_boilerplate() -> String {
-    r#"/* Custom styles for your web page */
-"#
-    .to_string()
+fn create_css_boilerplate(title: &str) -> String {
+    format!(
+        r#"/* Custom styles for {} page */
+"#,
+        title
+    )
 }
 
-fn create_js_boilerplate(filename: &str) -> String {
+fn create_js_boilerplate(title: &str) -> String {
     format!(
         r#"// JavaScript for {} page
 
 /**
  * Page initialization
  */
-document.addEventListener('DOMContentLoaded', function() {{
-    console.log('Initializing {} page...');
-    
-    // Initialize page components
-    initializeComponents();
-    
-    // Set up event listeners
-    setupEventListeners();
+$(document).ready(function () {{
+  console.log("Initializing {} page...");
+
+  // Initialize page components
+  initializeComponents();
+
+  // Set up event listeners
+  setupEventListeners();
 }});
 
 /**
@@ -193,13 +193,14 @@ function initializeComponents() {{
     console.log('Components initialized');
 }}
 "#,
-        filename, filename
+        title, title
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::analyze::AnalyzedData;
     use crate::config::Config;
 
     fn mock_config() -> Config {
@@ -231,15 +232,111 @@ mod tests {
 
     #[test]
     fn test_create_css_boilerplate() {
-        let css = create_css_boilerplate();
+        let css = create_css_boilerplate("test");
         assert!(css.contains("Custom styles"));
+        assert!(css.contains("test page"));
     }
 
     #[test]
     fn test_create_js_boilerplate() {
         let js = create_js_boilerplate("test_page");
-        assert!(js.contains("DOMContentLoaded"));
+        assert!(js.contains("$(document).ready"));
         assert!(js.contains("test_page"));
         assert!(js.contains("initializeComponents"));
+    }
+
+    #[test]
+    fn test_create_web_page() {
+        use std::fs;
+        use std::path::Path;
+
+        // Create a temporary test directory in tests/sandbox
+        let test_dir = "/tmp/frappe_mcp_test_web_page";
+        let app_path = format!("{}/test_app", test_dir);
+
+        // Clean up any existing test directory
+        if Path::new(test_dir).exists() {
+            fs::remove_dir_all(test_dir).unwrap();
+        }
+
+        let config = Config {
+            frappe_bench_dir: test_dir.to_string(),
+            app_name: "Test App".to_string(),
+            app_absolute_path: app_path.clone(),
+            app_relative_path: "test_app".to_string(),
+            site: "frontend".to_string(),
+        };
+
+        // Create a minimal AnalyzedData instance
+        let anal = AnalyzedData {
+            doctypes: vec![],
+            modules: vec![],
+            symbol_refs: None,
+        };
+
+        // Test 1: Create web page with CSS and JS
+        let result = create_web_page(
+            &config,
+            &anal,
+            "about",
+            Some("About Us".to_string()),
+            Some(true),
+            Some(true),
+        );
+        assert!(result.is_ok());
+
+        // Verify files were created
+        // The create_web_page function uses to_snakec on the app_name
+        let about_dir = Path::new(&app_path).join("test_app/www/about");
+        assert!(about_dir.exists());
+        assert!(about_dir.join("index.html").exists());
+        assert!(about_dir.join("about.css").exists());
+        assert!(about_dir.join("about.js").exists());
+
+        // Verify HTML content
+        let html_content = fs::read_to_string(about_dir.join("index.html")).unwrap();
+        assert!(html_content.contains("{% block title %}About Us{% endblock %}"));
+        assert!(html_content.contains("about.css"));
+        assert!(html_content.contains("about.js"));
+
+        // Test 2: Create web page without CSS and JS
+        let result = create_web_page(&config, &anal, "contact", None, Some(false), Some(false));
+        assert!(result.is_ok());
+
+        let contact_dir = Path::new(&app_path).join("test_app/www/contact");
+        assert!(contact_dir.join("index.html").exists());
+        assert!(!contact_dir.join("contact.css").exists());
+        assert!(!contact_dir.join("contact.js").exists());
+
+        // Test 3: Try to create duplicate page
+        let result = create_web_page(&config, &anal, "about", None, None, None);
+        assert!(result.is_ok());
+        if let Ok(tool_result) = result {
+            if let Some(first_content) = tool_result.content.first() {
+                if let RawContent::Text(text_content) = &first_content.raw {
+                    assert!(text_content.text.contains("File already exists"));
+                }
+            }
+        }
+
+        // Test 4: Create nested page
+        let result = create_web_page(
+            &config,
+            &anal,
+            "products/electronics",
+            Some("Electronics".to_string()),
+            None,
+            None,
+        );
+        assert!(result.is_ok());
+
+        let nested_dir = Path::new(&app_path).join("test_app/www/products/electronics");
+        assert!(nested_dir.exists());
+        assert!(nested_dir.join("index.html").exists());
+        assert!(nested_dir.join("electronics.css").exists());
+        assert!(nested_dir.join("electronics.js").exists());
+
+        // Clean up
+        fs::remove_dir_all(test_dir).unwrap();
     }
 }

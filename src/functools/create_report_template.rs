@@ -16,7 +16,7 @@ use std::path::Path;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::stringutil::to_snakec;
+use crate::stringutil::to_snakec_var;
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -29,8 +29,8 @@ pub fn create_report_template(
     report_type: Option<String>,
     ref_doctype: Option<String>,
 ) -> McpResult {
-    let snake_name = to_snakec(report_name);
-    let snake_module = to_snakec(module);
+    let snake_name = to_snakec_var(report_name);
+    let snake_module = to_snakec_var(module);
 
     // Find the module directory
     let module_path = find_module_path(config, &snake_module)?;
@@ -117,7 +117,7 @@ pub fn create_report_template(
 
 fn find_module_path(config: &Config, module: &str) -> Result<String, McpError> {
     let app_path = &config.app_absolute_path;
-    let app_name = to_snakec(&config.app_name);
+    let app_name = to_snakec_var(&config.app_name);
 
     // Search for the module in the app structure
     let search_pattern = format!("{}/{}/{}", app_path, app_name, module);
@@ -144,11 +144,11 @@ fn generate_python_file(
     ref_doctype: &Option<String>,
 ) -> String {
     let current_year = Utc::now().format("%Y");
-    let app_snake = to_snakec(&config.app_name);
+    let app_snake = to_snakec_var(&config.app_name);
 
     let ref_import = if let Some(ref_dt) = ref_doctype {
         format!("\n# Uncomment if you need to import the reference DocType\n# from {}.{}.doctype.{}.{} import {}", 
-                app_snake, app_snake, to_snakec(ref_dt), to_snakec(ref_dt), to_snakec(ref_dt))
+                app_snake, app_snake, to_snakec_var(ref_dt), to_snakec_var(ref_dt), to_snakec_var(ref_dt))
     } else {
         "".to_string()
     };
@@ -253,7 +253,7 @@ fn generate_javascript_file(report_name: &str, ref_doctype: &Option<String>) -> 
             fieldtype: "Link",
             options: "{}"
         }},"#,
-            to_snakec(ref_dt),
+            to_snakec_var(ref_dt),
             ref_dt,
             ref_dt
         )

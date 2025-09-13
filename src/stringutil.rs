@@ -10,7 +10,7 @@
 // is strictly forbidden unless prior written permission is obtained
 // from Nuwaira.
 
-/// Make a string into snake_case compliant and safe for Python identifiers.
+/// Make a string into snake_case compliant.
 /// For example, given this input: "Sales Invoice", it returns "sales_invoice".
 pub fn to_snakec(name: &str) -> String {
     let name = name.trim();
@@ -29,13 +29,45 @@ pub fn to_snakec(name: &str) -> String {
     if result.ends_with('_') {
         result.pop();
     }
-    // Ensure it doesn't start with a digit
-    if result.chars().next().map_or(false, |c| c.is_digit(10)) {
-        result.insert(0, '_');
-    }
     // If the result is empty (e.g., input was all non-alphanumeric), return a default name
     if result.is_empty() {
         return "default_name".to_string();
+    }
+    result
+}
+
+/// Make a string into a snake_case variable name that is safe for Python identifiers.
+pub fn to_snakec_var(name: &str) -> String {
+    let mut s = to_snakec(name);
+    // Ensure it doesn't start with a digit
+    if s.chars().next().map_or(false, |c| c.is_digit(10)) {
+        s.insert(0, '_');
+    }
+    s
+}
+
+/// Make a string into kebab-case, suitable for filenames or URLs.
+/// For example, given this input: "Sales Invoice", it returns "sales-invoice".
+pub fn to_kebabc(name: &str) -> String {
+    let name = name.trim();
+    let mut result = String::with_capacity(name.len());
+    let mut prev_was_dash = false;
+    for c in name.chars() {
+        if c.is_alphanumeric() {
+            result.push(c.to_ascii_lowercase());
+            prev_was_dash = false;
+        } else if !prev_was_dash {
+            result.push('-');
+            prev_was_dash = true;
+        }
+    }
+    // Remove trailing dash if present
+    if result.ends_with('-') {
+        result.pop();
+    }
+    // If the result is empty (e.g., input was all non-alphanumeric), return a default name
+    if result.is_empty() {
+        return "default-name".to_string();
     }
     result
 }
@@ -185,7 +217,7 @@ mod tests {
             ("name.with.dots", "name_with_dots"),
         ];
         for (input, expected) in cases {
-            assert_eq!(to_snakec(input), expected);
+            assert_eq!(to_snakec_var(input), expected);
         }
     }
 
@@ -241,5 +273,24 @@ mod tests {
         assert_eq!(generate_abbrev("The Economist Magazine System"), "TEM");
         assert_eq!(generate_abbrev("A"), "A");
         assert_eq!(generate_abbrev(""), "");
+    }
+
+    #[test]
+    fn test_to_kebabc() {
+        let cases = vec![
+            ("Sales Invoice", "sales-invoice"),
+            ("123StartWithDigits", "123startwithdigits"),
+            ("Special@Chars!", "special-chars"),
+            ("   Leading and Trailing   ", "leading-and-trailing"),
+            ("MixedCASEInput", "mixedcaseinput"),
+            ("", "default-name"),
+            ("!!!", "default-name"),
+            ("valid-name", "valid-name"),
+            ("name_with_underscores", "name-with-underscores"),
+            ("name.with.dots", "name-with-dots"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(to_kebabc(input), expected);
+        }
     }
 }

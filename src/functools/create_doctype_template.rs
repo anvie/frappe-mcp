@@ -17,7 +17,7 @@ use std::path::Path;
 
 use crate::analyze::{AnalyzedData, DocType};
 use crate::config::Config;
-use crate::stringutil::{generate_abbrev, to_pascalc, to_snakec};
+use crate::stringutil::{generate_abbrev, to_pascalc, to_snakec_var};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -51,13 +51,13 @@ pub fn create_doctype_template(
     fields: Option<Vec<FieldDefinition>>,
     settings: Option<DoctypeSettings>,
 ) -> McpResult {
-    let snake_name = to_snakec(name);
+    let snake_name = to_snakec_var(name);
     let camel_name = to_pascalc(name);
-    let module_snake = to_snakec(module);
+    let module_snake = to_snakec_var(module);
     let doctype_dir = format!(
         "{}/{}/{}/doctype/{}",
         config.app_absolute_path,
-        to_snakec(&config.app_name),
+        to_snakec_var(&config.app_name),
         module_snake,
         snake_name
     );

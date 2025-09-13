@@ -16,7 +16,7 @@ use std::path::Path;
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
 use crate::serdeutil::deserialize_bool_from_int_or_bool;
-use crate::stringutil::to_snakec;
+use crate::stringutil::to_snakec_var;
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -89,7 +89,7 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
 
     if candidate.is_none() {
         // try snake_case variant
-        let target_snake = to_snakec(target);
+        let target_snake = to_snakec_var(target);
         let candidate_snake = anal
             .doctypes
             .iter()

@@ -17,7 +17,7 @@ use std::path::Path;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::stringutil::{generate_abbrev, to_pascalc, to_snakec};
+use crate::stringutil::{generate_abbrev, to_pascalc, to_snakec_var};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -28,7 +28,7 @@ pub fn create_test_template(
     doctype: &str,
     doctype_dependencies: Option<Vec<String>>,
 ) -> McpResult {
-    let snake_name = to_snakec(doctype);
+    let snake_name = to_snakec_var(doctype);
 
     // Find the DocType directory by searching for the JSON metadata file
     let doctype_path = find_doctype_path(config, doctype)?;
@@ -91,9 +91,9 @@ pub fn create_test_template(
 }
 
 fn find_doctype_path(config: &Config, doctype: &str) -> Result<String, McpError> {
-    let snake_name = to_snakec(doctype);
+    let snake_name = to_snakec_var(doctype);
     let app_path = &config.app_absolute_path;
-    let app_name = to_snakec(&config.app_name);
+    let app_name = to_snakec_var(&config.app_name);
 
     // Search for the DocType in common module locations
     let search_paths = vec![format!(
@@ -130,7 +130,7 @@ fn generate_test_records_json(
     doctype: &str,
     doctype_path: &str,
 ) -> Result<String, McpError> {
-    let snake_name = to_snakec(doctype);
+    let snake_name = to_snakec_var(doctype);
     let json_metadata_path = format!("{}/{}.json", doctype_path, snake_name);
 
     // Read the DocType JSON metadata to extract fields
@@ -311,8 +311,8 @@ class Test{}(FrappeTestCase):
 "#,
         current_year,
         config.app_name,
-        to_snakec(&config.app_name),
-        to_snakec(&config.app_name),
+        to_snakec_var(&config.app_name),
+        to_snakec_var(&config.app_name),
         snake_name,
         snake_name,
         class_name,

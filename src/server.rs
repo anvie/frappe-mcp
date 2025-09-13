@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::config::Config;
 use crate::functools;
-use crate::{analyze::AnalyzedData, stringutil::to_snakec};
+use crate::{analyze::AnalyzedData, stringutil::to_snakec_var};
 use rmcp::{
     handler::server::{router::prompt::PromptRouter, tool::ToolRouter, wrapper::Parameters},
     model::*,
@@ -167,8 +167,8 @@ pub struct AnalyzeLinksArgs {
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CreateWebPageArgs {
-    /// File path where the web page should be created, don't include "www/" prefix, eg: "about.html" or "info/contact.html"
-    pub path: String,
+    /// Slug prefix for the web, eg: "sales-portal"", don't include "www/".
+    pub slug: String,
 
     /// Page title (optional, defaults to filename)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -462,7 +462,7 @@ impl ProjectExplorer {
         functools::create_web_page(
             &self.config,
             &anal,
-            &args.path,
+            &args.slug,
             args.title,
             args.include_css,
             args.include_js,
@@ -796,7 +796,7 @@ fn check_doctype_files_newer(config: &Config, analysis_mtime: std::time::SystemT
             continue;
         }
 
-        let module_dir = to_snakec(module_title);
+        let module_dir = to_snakec_var(module_title);
         let module_path = app_path.join(&config.app_relative_path).join(&module_dir);
 
         println!("Checking module: {}", module_title);

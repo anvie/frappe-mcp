@@ -50,8 +50,8 @@ fn print_tool_result(result: CallToolResult) {
 
 #[derive(Parser, Debug)]
 #[command(name = "frappe-mcp")]
-#[command(about = "MCP server for helping Agentic AI coding in Frappe environment")]
-#[command(author, version, long_about=None)]
+#[command(about = "Frappe MCP server for helping Agentic AI coding in Frappe environment")]
+#[command(author, version = env!("CARGO_PKG_VERSION"), long_about=None)]
 struct Args {
     #[arg(short, long, default_value = "frappe-mcp.conf")]
     config: String,
@@ -169,7 +169,7 @@ async fn main() {
             return;
         }
         CommandEnum::Version => {
-            println!("Version 0.0.1");
+            println!("Version {}", env!("CARGO_PKG_VERSION"));
             return;
         }
     }

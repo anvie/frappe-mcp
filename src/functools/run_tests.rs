@@ -14,7 +14,7 @@ use std::process::Command;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
-use crate::stringutil::to_snakec;
+use crate::stringutil::to_snakec_var;
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -33,8 +33,8 @@ pub fn run_tests(
 
     let mut cmd_args: Vec<String> = vec![];
 
-    let app_name_snake = to_snakec(&config.app_name);
-    let snake_doctype = to_snakec(doctype.as_deref().unwrap_or(""));
+    let app_name_snake = to_snakec_var(&config.app_name);
+    let snake_doctype = to_snakec_var(doctype.as_deref().unwrap_or(""));
 
     cmd_args.push("--site".to_string());
     cmd_args.push(config.site.clone());
@@ -48,7 +48,7 @@ pub fn run_tests(
                 "--app {} --module {}.{}.doctype.{}.test_{}",
                 &app_name_snake,
                 &app_name_snake,
-                to_snakec(m),
+                to_snakec_var(m),
                 snake_doctype,
                 snake_doctype
             );
@@ -66,7 +66,7 @@ pub fn run_tests(
                 "--app {} --module {}.{}",
                 &app_name_snake,
                 &app_name_snake,
-                to_snakec(m),
+                to_snakec_var(m),
             );
             let module_args: Vec<String> = module_path
                 .split_whitespace()
@@ -84,7 +84,7 @@ pub fn run_tests(
                     "--app {} --module {}.{}.doctype.{}.test_{}",
                     &app_name_snake,
                     &app_name_snake,
-                    to_snakec(&found_module),
+                    to_snakec_var(&found_module),
                     snake_doctype,
                     snake_doctype
                 );
