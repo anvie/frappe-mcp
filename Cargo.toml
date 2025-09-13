@@ -3,7 +3,7 @@ authors = ["Robin Syihab <robin@syihab.st>"]
 description = "A Model Context Protocol server to help AI ai with Frappe app development"
 edition = "2018"
 name = "frappe_mcp"
-version = "0.0.8"
+version = "0.0.9"
 
 [lib]
 name = "frappe_mcp"

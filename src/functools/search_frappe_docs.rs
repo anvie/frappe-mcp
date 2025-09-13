@@ -19,18 +19,13 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, Default)]
 pub enum OutputFormat {
     #[serde(rename = "json")]
+    #[default]
     Json,
     #[serde(rename = "markdown")]
     Markdown,
-}
-
-impl Default for OutputFormat {
-    fn default() -> Self {
-        OutputFormat::Json
-    }
 }
 
 #[derive(RustEmbed)]
