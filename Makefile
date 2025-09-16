@@ -33,7 +33,7 @@ clean:
 
 build-linux-amd64:
 	@@echo Building for Linux AMD64...
-	@@cargo zigbuild --target amd64-unknown-linux-gnu --release
+	@@cargo zigbuild --target x86_64-unknown-linux-gnu --release
 
 build-linux-arm64:
 	@@echo Building for Linux ARM64...
