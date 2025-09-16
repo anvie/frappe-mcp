@@ -65,8 +65,13 @@ pub fn create_web_page(
     let mut result = Vec::new();
 
     // Create HTML file
-    let html_content =
-        create_html_boilerplate(&page_title, css_enabled, js_enabled, &to_kebabc(&filename));
+    let html_content = create_html_boilerplate(
+        &page_title,
+        css_enabled,
+        js_enabled,
+        slug,
+        &to_kebabc(&filename),
+    );
     if let Err(e) = fs::write(&index_html, html_content) {
         mcp_return!(format!("Failed to write HTML file: {}", e));
     }
@@ -105,16 +110,20 @@ fn create_html_boilerplate(
     title: &str,
     include_css: bool,
     include_js: bool,
+    slug: &str,
     filename: &str,
 ) -> String {
     let css_link = if include_css {
-        format!("    <link rel=\"stylesheet\" href=\"{}.css\">\n", filename)
+        format!(
+            "    <link rel=\"stylesheet\" href=\"{}/{}.css\">\n",
+            slug, filename
+        )
     } else {
         String::new()
     };
 
     let js_script = if include_js {
-        format!("    <script src=\"{}.js\"></script>\n", filename)
+        format!("    <script src=\"{}/{}.js\"></script>\n", slug, filename)
     } else {
         String::new()
     };
@@ -215,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_create_html_boilerplate() {
-        let html = create_html_boilerplate("Test Page", true, true, "test_page");
+        let html = create_html_boilerplate("Test Page", true, true, "", "test_page");
         println!("{}", html);
         assert!(html.contains("templates/web.html"));
         assert!(html.contains("{% block title %}Test Page{% endblock %}"));
@@ -225,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_create_html_without_css_js() {
-        let html = create_html_boilerplate("Test Page", false, false, "test_page");
+        let html = create_html_boilerplate("Test Page", false, false, "", "test_page");
         assert!(!html.contains("test_page.css"));
         assert!(!html.contains("test_page.js"));
     }
