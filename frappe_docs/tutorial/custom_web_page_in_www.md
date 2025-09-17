@@ -1,4 +1,4 @@
-# Building Custom Web Pages in Frappe
+# Building Custom Web Page in Frappe
 
 This guide explains how to create public-facing web pages in a Frappe app using the `www/` directory. It covers folder structure, routing, templating with Jinja, dynamic context via Python, assets, SEO, caching, and common pitfalls—with copy‑pasteable examples.
 
@@ -12,7 +12,7 @@ Use `www/` when you want **highly-customized web page** that are public by defau
 - Lightly dynamic pages rendered with Jinja variables from `get_context`
 - Pages that don’t need database‑driven routes (for that, consider **Website Generator** doctypes)
 
-Prefer [**Frappe Custom Page**](custom_web_page.md) using Web Page doctype or **Website Generator** when non‑developers will edit content or when you need database‑backed, user‑editable pages.
+Prefer [**Frappe Custom Page**](custom_web_page.md) using Web Page doctype for non `www` and to get access to frappe utils.
 
 ---
 

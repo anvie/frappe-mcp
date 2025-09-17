@@ -347,7 +347,7 @@ fn extract_snippet(content: &str, query: &str, max_length: usize) -> String {
             .join(" ");
 
         if snippet.len() > max_length {
-            snippet.truncate(max_length);
+            snippet.push_str(&snippet.chars().take(max_length).collect::<String>());
             snippet.push_str("...");
         }
 

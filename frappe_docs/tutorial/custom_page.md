@@ -15,7 +15,9 @@
 
 ## Overview
 
-Frappe custom pages are standalone interfaces built using the Frappe framework's UI components. They provide complete control over layout and functionality while leveraging Frappe's powerful form controls, validation, and backend integration capabilities.
+Frappe custom pages are standalone interfaces built using the Frappe framework's UI components.
+Registered using `Web Page` doctype, the page url will be `/app/[slug]`.
+They provide complete control over layout and functionality while leveraging Frappe's powerful form controls, validation, and backend integration capabilities.
 
 ### Key Components
 
@@ -773,4 +775,3 @@ Building custom pages with forms in Frappe follows a consistent pattern:
 7. **Error Handling**: Provide clear feedback for success and failure states
 
 The framework provides powerful tools for building complex forms while maintaining consistency with the rest of the Frappe/ERPNext ecosystem. The key is understanding the patterns and leveraging the built-in components effectively.
-

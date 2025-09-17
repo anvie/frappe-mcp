@@ -25,11 +25,15 @@ mod shellutil;
 mod stringutil;
 
 use config::Config;
-use rmcp::model::CallToolResult;
+use rmcp::model::{CallToolResult, RawTextContent};
 
 fn print_tool_result(result: CallToolResult) {
     // For CLI output, extract text from content items
     for content in result.content.iter() {
+        if let Some(RawTextContent { text, .. }) = content.as_text() {
+            println!("{}", text);
+            continue;
+        }
         // Extract the raw text content
         let text = format!("{:?}", content);
         // Look for the text field in the debug output
