@@ -16,7 +16,7 @@
 ## Overview
 
 Frappe custom pages are standalone interfaces built using the Frappe framework's UI components.
-Registered using `Web Page` doctype, the page url will be `/app/[slug]`.
+Registered using `Page` doctype, the page url will be in `/app/[slug]`.
 They provide complete control over layout and functionality while leveraging Frappe's powerful form controls, validation, and backend integration capabilities.
 
 ### Key Components
