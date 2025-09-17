@@ -1,423 +1,466 @@
-# Frappe “Table” Component on a Custom Page
+# Creating Custom Tables in Frappe Pages
 
-Use Frappe’s **Table** fieldtype (the same grid used in DocTypes) inside a **custom page** to get add/remove rows, column types, and validation UI—without opening a form.
+## Overview
 
-This guide shows how to render it, feed data, read data back, and save it yourself.
+This guide demonstrates how to create custom tables with Frappe field controls in custom pages. This approach provides flexibility while leveraging Frappe's powerful field components.
 
----
+## Table of Contents
 
-## What the “Table” Component Is (and Isn’t)
+1. [Basic Structure](#basic-structure)
+2. [Adding Frappe Field Controls](#adding-frappe-field-controls)
+3. [Event Handling](#event-handling)
+4. [Data Management](#data-management)
+5. [Validation](#validation)
+6. [Complete Example](#complete-example)
 
-- **Is:** the same grid UI used by a DocType’s child table field.
-- **Needs:** a **Child DocType** (its schema defines columns).
-- **Doesn’t do automatically on a custom page:** load/save to the database. You control data source and persistence.
+## Basic Structure
 
-If you don’t want to define a Child DocType, use **frappe-datatable** instead (see the end).
+### HTML Table Template
 
----
+```javascript
+setup_table() {
+    const table_html = $(`
+        <div class="form-section">
+            <h4>Table Title</h4>
+            <div class="custom-table-container">
+                <table class="table table-bordered" id="custom-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">#</th>
+                            <th style="width: 30%">Column 1</th>
+                            <th style="width: 25%">Column 2</th>
+                            <th style="width: 20%">Column 3</th>
+                            <th style="width: 10%">Column 4</th>
+                            <th style="width: 10%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-tbody">
+                    </tbody>
+                </table>
+                <div class="table-actions">
+                    <button class="btn btn-sm btn-primary" id="add-row-btn">
+                        <i class="fa fa-plus"></i> Add Row
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).appendTo(this.container);
 
-## Prerequisites
+    // Initialize data array
+    this.table_rows = [];
 
-1. **Child DocType**
-
-   - Create a Child DocType (e.g. `Invoice Item`) with `Is Child Table = 1`.
-   - Add fields (e.g. `item_code` (Link), `qty` (Float), `rate` (Currency), etc.).
-
-2. **A Custom Page** scaffolded in your app.
-
----
-
-## Quick Start (Minimal)
-
-```js
-// file: your_app/your_app/page/my_page/my_page.js
-frappe.pages["my-page"].on_page_load = function (wrapper) {
-  const page = frappe.ui.make_app_page({
-    parent: wrapper,
-    title: "My Table on a Custom Page",
-    single_column: true,
-  });
-
-  // Container for the table
-  const $holder = $('<div id="my-table" />').appendTo(page.body);
-
-  // 1) Create a Table control (Grid) using a Child DocType schema
-  frappe.ui.form
-    .make_control({
-      parent: $holder,
-      df: {
-        fieldtype: "Table",
-        label: "Items",
-        options: "Invoice Item", // <-- your Child DocType name
-      },
-      render_input: true,
-    })
-    .then((control) => {
-      // 2) Preload data (optional)
-      control.df.data = [
-        { item_code: "SKU-001", qty: 2, rate: 75000 },
-        { item_code: "SKU-002", qty: 1, rate: 125000 },
-      ];
-      control.refresh(); // renders grid rows
-
-      // 3) Read data back (e.g., to save)
-      page.set_primary_action("Save", async () => {
-        const rows = control.grid.get_data(); // array of row objects
-        // Do something with rows (call a whitelisted method, etc.)
-        await frappe.call("your_app.your_app.page.my_page.my_page.save_rows", {
-          rows,
-        });
-        frappe.show_alert({ message: __("Saved!"), indicator: "green" });
-      });
+    // Setup add button
+    $('#add-row-btn').on('click', () => {
+        this.add_table_row();
     });
-};
-```
 
----
-
-## Rendering Details
-
-- Use `frappe.ui.form.make_control({ df: { fieldtype: "Table", options: "<Child DocType>" } })`.
-- `options` **must** be your **Child DocType** name (not a DocField label).
-- Call `control.refresh()` after you set or mutate `control.df.data`.
-
----
-
-## Loading Data
-
-You have two common patterns:
-
-### A) Feed raw objects directly
-
-```js
-control.df.data = existing_rows; // array of objects matching child fields
-control.refresh();
-```
-
-### B) Build rows programmatically
-
-```js
-// Adds a single empty row:
-control.grid.add_new_row();
-
-// Or add many:
-for (const r of rows) control.grid.add_new_row(r);
-control.grid.refresh();
-```
-
-> Tip: Rows should use **fieldnames** from the Child DocType (e.g., `qty`, `item_code`, `rate`).
-
----
-
-## Reading Data
-
-```js
-const rows = control.grid.get_data();
-// rows = [{ item_code: 'SKU-001', qty: 2, rate: 75000, ... }, ...]
-```
-
-This returns “clean” JSON of the grid values (ignores internal grid metadata).
-
----
-
-## Common Grid Operations
-
-```js
-// Add blank row
-control.grid.add_new_row();
-
-// Remove selected rows
-const selected = control.grid.get_selected();
-control.grid.remove_rows(selected);
-
-// Refresh UI after programmatic changes
-control.grid.refresh();
-
-// Access row objects (advanced)
-for (const row of control.grid.grid_rows || []) {
-  // row.doc is the underlying row data
-  // row.remove() to remove this row
+    // Add initial row
+    this.add_table_row();
 }
 ```
 
----
+## Adding Frappe Field Controls
+
+### Creating a Row with Field Controls
+
+```javascript
+add_table_row() {
+    // Generate unique row ID
+    const row_id = 'row_' + Math.random().toString(36).substring(2, 9);
+    const row_index = this.table_rows.length;
+
+    // Create row HTML
+    const row_html = $(`
+        <tr data-row-id="${row_id}" data-index="${row_index}">
+            <td class="text-center">${row_index + 1}</td>
+            <td><div id="field1-${row_id}"></div></td>
+            <td><div id="field2-${row_id}"></div></td>
+            <td><div id="field3-${row_id}"></div></td>
+            <td><div id="field4-${row_id}"></div></td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-danger remove-row-btn" data-row-id="${row_id}">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).appendTo('#table-tbody');
+
+    // Create field controls
+    const row_fields = {};
+
+    // Link Field Example
+    row_fields.field1 = frappe.ui.form.make_control({
+        df: {
+            fieldtype: 'Link',
+            options: 'DocType Name',  // Replace with actual DocType
+            placeholder: 'Select...',
+            get_query: () => {
+                return {
+                    filters: {
+                        // Add any filters here
+                    }
+                };
+            },
+            change: () => {
+                this.handle_field_change(row_id);
+            }
+        },
+        parent: row_html.find(`#field1-${row_id}`)[0],
+        render_input: true
+    });
+
+    // Data Field Example
+    row_fields.field2 = frappe.ui.form.make_control({
+        df: {
+            fieldtype: 'Data',
+            placeholder: 'Enter text',
+            change: () => {
+                this.handle_field_change(row_id);
+            }
+        },
+        parent: row_html.find(`#field2-${row_id}`)[0],
+        render_input: true
+    });
+
+    // Float Field Example
+    row_fields.field3 = frappe.ui.form.make_control({
+        df: {
+            fieldtype: 'Float',
+            placeholder: '0.00',
+            default: 0,
+            change: () => {
+                this.handle_field_change(row_id);
+            }
+        },
+        parent: row_html.find(`#field3-${row_id}`)[0],
+        render_input: true
+    });
+
+    // Currency Field Example (Read-only)
+    row_fields.field4 = frappe.ui.form.make_control({
+        df: {
+            fieldtype: 'Currency',
+            read_only: 1,
+            placeholder: '0.00'
+        },
+        parent: row_html.find(`#field4-${row_id}`)[0],
+        render_input: true
+    });
+
+    // Store row data
+    this.table_rows.push({
+        id: row_id,
+        fields: row_fields,
+        data: {}
+    });
+
+    // Setup remove button
+    row_html.find('.remove-row-btn').on('click', () => {
+        this.remove_table_row(row_id);
+    });
+}
+```
+
+## Event Handling
+
+### Handling Field Changes
+
+```javascript
+handle_field_change(row_id) {
+    const row = this.table_rows.find(r => r.id === row_id);
+    if (!row) return;
+
+    // Get values from fields
+    const value1 = row.fields.field1.get_value();
+    const value2 = row.fields.field2.get_value();
+    const value3 = parseFloat(row.fields.field3.get_value()) || 0;
+
+    // Store in data object
+    row.data.field1 = value1;
+    row.data.field2 = value2;
+    row.data.field3 = value3;
+
+    // Perform calculations or other logic
+    this.calculate_row_values(row_id);
+    this.update_totals();
+}
+```
+
+### Auto-population from Link Field
+
+```javascript
+handle_link_field_change(row_id) {
+    const row = this.table_rows.find(r => r.id === row_id);
+    if (!row) return;
+
+    const selected_value = row.fields.field1.get_value();
+    if (!selected_value) {
+        // Clear dependent fields
+        row.fields.field2.set_value('');
+        row.fields.field3.set_value(0);
+        return;
+    }
+
+    // Fetch related data
+    frappe.call({
+        method: 'frappe.client.get',
+        args: {
+            doctype: 'DocType Name',
+            name: selected_value
+        },
+        callback: (r) => {
+            if (r.message) {
+                const doc = r.message;
+
+                // Update dependent fields
+                row.fields.field2.set_value(doc.some_field || '');
+                row.fields.field3.set_value(doc.numeric_field || 0);
+
+                // Update data
+                row.data.field2 = doc.some_field || '';
+                row.data.field3 = doc.numeric_field || 0;
+
+                // Recalculate if needed
+                this.calculate_row_values(row_id);
+            }
+        }
+    });
+}
+```
+
+## Data Management
+
+### Removing Rows
+
+```javascript
+remove_table_row(row_id) {
+    // Check minimum rows requirement
+    if (this.table_rows.length <= 1) {
+        frappe.msgprint(__('At least one row is required'));
+        return;
+    }
+
+    // Remove from DOM
+    $(`tr[data-row-id="${row_id}"]`).remove();
+
+    // Remove from data array
+    this.table_rows = this.table_rows.filter(r => r.id !== row_id);
+
+    // Update row numbers
+    this.update_row_numbers();
+
+    // Recalculate totals
+    this.update_totals();
+}
+
+update_row_numbers() {
+    $('#table-tbody tr').each((index, row) => {
+        $(row).find('td:first').text(index + 1);
+        $(row).attr('data-index', index);
+    });
+}
+```
+
+### Calculations
+
+```javascript
+calculate_row_values(row_id) {
+    const row = this.table_rows.find(r => r.id === row_id);
+    if (!row) return;
+
+    // Example: Calculate amount = quantity * rate
+    const qty = parseFloat(row.fields.quantity?.get_value()) || 0;
+    const rate = parseFloat(row.fields.rate?.get_value()) || 0;
+    const amount = qty * rate;
+
+    // Update calculated field
+    if (row.fields.amount) {
+        row.fields.amount.set_value(amount);
+    }
+
+    // Store calculated value
+    row.data.amount = amount;
+}
+
+update_totals() {
+    let total = 0;
+
+    this.table_rows.forEach(row => {
+        total += parseFloat(row.data.amount) || 0;
+    });
+
+    // Display total
+    $('#total-amount').text(frappe.format(total, {fieldtype: 'Currency'}));
+}
+```
 
 ## Validation
 
-You have two layers:
+### Form Validation
 
-1. **Child DocType field rules** (Reqd, Options, Types) → enforced by the grid UI.
-2. **Custom checks** (before saving):
+```javascript
+validate_table_data() {
+    const errors = [];
+    let has_valid_rows = false;
 
-   ```js
-   const rows = control.grid.get_data();
+    this.table_rows.forEach((row, index) => {
+        const field1 = row.fields.field1.get_value();
+        const field3 = parseFloat(row.fields.field3.get_value()) || 0;
 
-   // Example: qty must be > 0
-   const bad = rows.find((r) => !r.qty || r.qty <= 0);
-   if (bad) {
-     frappe.msgprint(__("Qty must be greater than zero"));
-     return;
-   }
-   ```
-
----
-
-## Saving (Server Round-Trip)
-
-Create a whitelisted method (Python) to persist wherever you want (a parent DocType, a custom table, or your own logic).
-
-```python
-# file: your_app/your_app/page/my_page/my_page.py
-import frappe
-
-@frappe.whitelist()
-def save_rows(rows: list[dict] | None = None):
-    """Persist the grid rows somewhere (example only)."""
-    rows = rows or []
-    # Example: write into a parent DocType "Invoice Draft" + its child "Invoice Item"
-    parent = frappe.new_doc("Invoice Draft")
-    for r in rows:
-        parent.append("items", r)  # "items" = child table fieldname on the parent
-    parent.insert(ignore_permissions=True)
-    frappe.db.commit()
-    return {"name": parent.name, "count": len(rows)}
-```
-
-> Replace with your own persistence rules. On a **custom page**, you decide the storage model.
-
----
-
-## Events & Hooks You Can Use
-
-While there’s no formal “grid event bus” API, practical hooks include:
-
-```js
-// Listen to changes within the grid UI
-control.grid.wrapper.on("change", "input, select", (e) => {
-  // e.target has the edited input; you can re-sum totals, etc.
-});
-
-// Recalculate totals on refresh
-const recompute = () => {
-  const rows = control.grid.get_data();
-  const total = rows.reduce((s, r) => s + (r.qty || 0) * (r.rate || 0), 0);
-  $("#grand-total").text(frappe.format(total, { fieldtype: "Currency" }));
-};
-
-control.grid.refresh = ((orig) =>
-  function () {
-    const ret = orig.apply(this, arguments);
-    recompute();
-    return ret;
-  })(control.grid.refresh);
-```
-
----
-
-## Read-Only / Disabled Mode
-
-```js
-// Disable add/remove and editing:
-control.grid.only_sortable(); // disables editing cells (lightweight)
-control.grid.wrapper.addClass("disabled-grid"); // CSS approach
-// Or, for stricter control, set fields as Read Only in Child DocType and hide add/remove buttons:
-control.grid.wrapper.find(".grid-add-row, .grid-remove-rows").hide();
-```
-
-(For robust locking, enforce on the server as well.)
-
----
-
-## Formatting & Link Fields
-
-- The grid uses standard Frappe formatters (Currency, Int, Float, Link, etc.).
-- For `Link` fields, typeahead works if the linked DocType is accessible and has a search field.
-- To display formatted values externally:
-
-  ```js
-  const currency = frappe
-    .get_meta("Invoice Item")
-    .fields.find((f) => f.fieldname === "rate");
-  const formatted = frappe.format(125000, currency, {}, "Currency");
-  ```
-
----
-
-## Permissions
-
-The grid won’t check a parent form’s permissions on a custom page. Enforce permissions in your whitelisted methods (e.g., role checks) before writing to DB.
-
----
-
-## Performance Notes
-
-- Large datasets: prefer **server-side pagination** or load a subset, not thousands of rows at once.
-- Avoid frequent `control.refresh()` calls—batch updates then refresh once.
-- If you need virtualization and big-data scrolling, consider **frappe-datatable**.
-
----
-
-## Troubleshooting
-
-- **Blank grid**: ensure `df.options` is exactly your **Child DocType** name and that DocType exists.
-- **Columns missing**: confirm fields are on the Child DocType (not `Hidden`) and you don’t override `in_list_view` unexpectedly.
-- **No save**: remember this is not a Form; implement your own save routine.
-- **Link field not searching**: check the linked DocType’s `search_fields` and user permissions.
-
----
-
-## When to Use `frappe-datatable` Instead
-
-Use **frappe-datatable** when:
-
-- You don’t want to create a Child DocType.
-- You need huge datasets with virtualization.
-- You want pure display or a custom edit model.
-
-Minimal example:
-
-```js
-// yarn add frappe-datatable (in app build step) or use the included asset if available
-const dt = new DataTable("#table", {
-  columns: [
-    { name: "Item Code", id: "item_code", editable: true },
-    { name: "Qty", id: "qty", editable: true, format: (v) => +v },
-    { name: "Rate", id: "rate", editable: true },
-  ],
-  data: [
-    { item_code: "SKU-001", qty: 2, rate: 75000 },
-    { item_code: "SKU-002", qty: 1, rate: 125000 },
-  ],
-});
-
-const rows = dt.getData(); // read back
-```
-
----
-
-## Complete Example (Custom Page with Save)
-
-**JS (page front-end)**
-
-```js
-frappe.pages["items-planner"].on_page_load = function (wrapper) {
-  const page = frappe.ui.make_app_page({
-    parent: wrapper,
-    title: "Items Planner",
-    single_column: true,
-  });
-
-  const $actions = $(`
-    <div class="flex items-center gap-2 mb-3">
-      <button class="btn btn-sm btn-primary" id="add-row">Add Row</button>
-      <button class="btn btn-sm btn-secondary" id="load">Load Sample</button>
-      <button class="btn btn-sm btn-primary" id="save">Save</button>
-      <div class="ml-auto text-muted">Grand Total: <b id="grand-total">0</b></div>
-    </div>
-  `).appendTo(page.body);
-
-  const $holder = $('<div id="grid-holder" />').appendTo(page.body);
-
-  let gridControl;
-
-  frappe.ui.form
-    .make_control({
-      parent: $holder,
-      df: { fieldtype: "Table", label: "Plan Items", options: "Invoice Item" },
-      render_input: true,
-    })
-    .then((control) => {
-      gridControl = control;
-
-      const recompute = () => {
-        const rows = control.grid.get_data();
-        const total = rows.reduce(
-          (s, r) => s + (r.qty || 0) * (r.rate || 0),
-          0,
-        );
-        $("#grand-total").text(frappe.format(total, { fieldtype: "Currency" }));
-      };
-
-      control.grid.wrapper.on("change", "input, select", recompute);
-
-      $("#add-row").on("click", () => {
-        control.grid.add_new_row();
-        control.grid.refresh();
-      });
-
-      $("#load").on("click", () => {
-        control.df.data = [
-          { item_code: "SKU-001", qty: 3, rate: 50000 },
-          { item_code: "SKU-ABC", qty: 1, rate: 250000 },
-        ];
-        control.refresh();
-      });
-
-      $("#save").on("click", async () => {
-        const rows = control.grid.get_data();
-        if (rows.length === 0) return frappe.msgprint(__("No rows to save"));
-
-        // Simple client validation
-        if (rows.some((r) => !r.item_code || !r.qty || r.qty <= 0)) {
-          return frappe.msgprint(
-            __("Please fill Item Code and positive Qty for all rows."),
-          );
+        // Check if row has any data
+        if (field1 || field3 > 0) {
+            // Validate required fields
+            if (!field1) {
+                errors.push(`Row ${index + 1}: Field 1 is required`);
+            }
+            if (field3 <= 0) {
+                errors.push(`Row ${index + 1}: Field 3 must be greater than 0`);
+            } else {
+                has_valid_rows = true;
+            }
         }
-
-        const { message } = await frappe.call(
-          "your_app.your_app.page.items_planner.items_planner.save_rows",
-          { rows },
-        );
-        frappe.show_alert({
-          message: __("Saved: {0}", [message.name]),
-          indicator: "green",
-        });
-      });
     });
-};
+
+    if (!has_valid_rows) {
+        errors.push('At least one valid row is required');
+    }
+
+    if (errors.length > 0) {
+        frappe.msgprint({
+            title: __('Validation Error'),
+            message: errors.join('<br>'),
+            indicator: 'red'
+        });
+        return false;
+    }
+
+    return true;
+}
 ```
 
-**Python (server save)**
+### Collecting Data for Submission
 
-```python
-import frappe
+```javascript
+collect_table_data() {
+    const data = [];
 
-@frappe.whitelist()
-def save_rows(rows: list[dict] | None = None):
-    """Example: persist rows into a parent 'Plan' with child 'Invoice Item'."""
-    rows = rows or []
-    if not frappe.has_permission('Plan', 'create'):
-        frappe.throw('Not permitted')
+    this.table_rows.forEach(row => {
+        const field1 = row.fields.field1.get_value();
+        const field3 = parseFloat(row.fields.field3.get_value()) || 0;
 
-    plan = frappe.new_doc('Plan')
-    for r in rows:
-        plan.append('items', r)  # 'items' is the child table field on Plan
-    plan.insert()
-    frappe.db.commit()
-    return {"name": plan.name, "count": len(rows)}
+        // Only include rows with valid data
+        if (field1 && field3 > 0) {
+            data.push({
+                field1: field1,
+                field2: row.fields.field2.get_value() || '',
+                field3: field3,
+                field4: row.data.field4 || 0
+            });
+        }
+    });
+
+    return data;
+}
 ```
 
-> Replace `'Plan'`/`'items'` with your actual parent DocType and child fieldname, or write custom storage logic.
+## Complete Example
 
----
+### CSS Styles
 
-## FAQ
+```css
+.custom-table-container {
+  margin-bottom: 15px;
+}
 
-**Q: Do I have to use a Child DocType?**
-**A:** Yes, for the **Table** fieldtype. Otherwise use **frappe-datatable**.
+#custom-table {
+  margin-bottom: 10px;
+}
 
-**Q: Can I reuse the same Table across pages?**
-**A:** Yes. Create a helper that builds the control and injects it wherever needed.
+#custom-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  border-color: #dee2e6;
+}
 
-**Q: Can I use grid filters, totals, etc.?**
-**A:** Totals are DIY (as shown). For filtering, either transform `get_data()` or prefer **frappe-datatable**.
+#custom-table td {
+  vertical-align: middle;
+  padding: 4px;
+}
 
----
+#custom-table td .control-input {
+  margin-bottom: 0;
+}
 
-## TL;DR
+.table-actions {
+  margin-bottom: 10px;
+}
 
-- Use `frappe.ui.form.make_control` with `fieldtype: "Table"` and `options: "<Child DocType>"`.
-- Feed data via `control.df.data = [...]` + `control.refresh()`.
-- Read with `control.grid.get_data()`.
-- Implement your own **save** (whitelisted method).
-- For big/standalone tables without a Child DocType, pick **frappe-datatable**.
+.total-section {
+  border-top: 2px solid #f0f0f0;
+  padding-top: 15px;
+  text-align: right;
+}
+```
+
+## Available Field Types
+
+Frappe provides various field types you can use in your custom table:
+
+- **Data**: Plain text input
+- **Link**: Dropdown with autocomplete to select DocType records
+- **Select**: Dropdown with predefined options
+- **Float**: Numeric input for decimal numbers
+- **Int**: Numeric input for integers
+- **Currency**: Formatted currency input
+- **Date**: Date picker
+- **Datetime**: Date and time picker
+- **Time**: Time picker
+- **Check**: Checkbox
+- **Text**: Multi-line text input
+- **Small Text**: Smaller multi-line text input
+- **Color**: Color picker
+- **Rating**: Star rating input
+
+### Field Definition Options
+
+```javascript
+{
+    fieldtype: 'FieldType',      // Required: Type of field
+    fieldname: 'field_name',      // Optional: Internal field name
+    label: 'Field Label',         // Optional: Display label
+    placeholder: 'Placeholder',   // Optional: Placeholder text
+    default: 'default_value',     // Optional: Default value
+    reqd: 1,                      // Optional: Required field (0 or 1)
+    read_only: 1,                 // Optional: Read-only field (0 or 1)
+    options: 'DocType/Options',   // For Link: DocType name, For Select: Options
+    change: () => {},             // Optional: Change event handler
+    get_query: () => {},          // Optional: For Link fields - filter query
+    depends_on: 'condition',      // Optional: Show/hide based on condition
+}
+```
+
+## Best Practices
+
+1. **Always initialize data structures** before creating the table
+2. **Use unique IDs** for each row to avoid conflicts
+3. **Implement proper validation** before processing data
+4. **Handle edge cases** like minimum row requirements
+5. **Clean up event listeners** when removing rows
+6. **Use Frappe's formatting utilities** for displaying values
+7. **Implement loading states** for async operations
+8. **Provide clear error messages** for validation failures
+9. **Consider keyboard navigation** for better UX
+10. **Test with various data scenarios** including empty states
+
+## Tips
+
+- Use `frappe.format()` to display formatted values
+- Use `frappe.msgprint()` for user notifications
+- Use `frappe.call()` for server interactions
+- Leverage Frappe's built-in validation for field types
+- Consider implementing undo/redo functionality for better UX
+- Add keyboard shortcuts for common actions (e.g., Ctrl+Enter to add row)
+- Implement auto-save functionality for long forms
+- Consider pagination for tables with many rows
+
+This approach provides a flexible solution that works well in Frappe custom pages without the complexity of the built-in grid system.
