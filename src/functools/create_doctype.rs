@@ -17,7 +17,7 @@ use std::path::Path;
 
 use crate::analyze::{AnalyzedData, DocType};
 use crate::config::Config;
-use crate::stringutil::{generate_abbrev, to_pascalc, to_snakec_var};
+use crate::stringutil::{to_pascalc, to_snakec_var};
 use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
@@ -43,7 +43,7 @@ pub struct FieldDefinition {
     pub length: Option<u32>,
 }
 
-pub fn create_doctype_template(
+pub fn create_doctype(
     config: &Config,
     anal: &mut AnalyzedData,
     name: &str,
@@ -158,29 +158,19 @@ fn create_json_metadata(
     module_name: &str,
     settings: &DoctypeSettings,
 ) -> String {
-    let mut default_fields = vec![FieldDefinition {
-        fieldname: "naming_series".to_string(),
-        fieldtype: "Select".to_string(),
-        label: "Series".to_string(),
-        reqd: Some(1),
-        options: Some(format!("{}-.YY.MM.DD.####", generate_abbrev(name))),
-        in_list_view: Some(0),
-        in_standard_filter: Some(0),
-        read_only: None,
-        length: None,
-    }];
+    // Check if any field is a naming_series field
+    let has_naming_series = fields.iter().any(|f| f.fieldname == "naming_series");
+    
+    // Use fields as-is
+    let default_fields = fields;
 
-    // Add custom fields if provided
-    default_fields.extend_from_slice(fields);
-
-    let json = serde_json::json!({
+    let mut json = serde_json::json!({
         "actions": [],
         "allow_copy": false,
         "allow_events_in_timeline": false,
         "allow_guest_to_view": false,
         "allow_import": true,
         "allow_rename": true,
-        "autoname": "naming_series:",
         "beta": false,
         "creation": format!("{}-01-01 00:00:00.000000", get_current_year()),
         "default_view": "List",
@@ -201,7 +191,6 @@ fn create_json_metadata(
         "modified_by": "Administrator",
         "module": module_name,
         "name": name,
-        "naming_rule": "By \"Naming Series\" field",
         "owner": "Administrator",
         "permissions": [
             {
@@ -228,6 +217,12 @@ fn create_json_metadata(
         "track_seen": false,
         "track_views": false
     });
+
+    // Add autoname and naming_rule only if naming_series field is present
+    if has_naming_series {
+        json["autoname"] = serde_json::json!("naming_series:");
+        json["naming_rule"] = serde_json::json!("By \"Naming Series\" field");
+    }
 
     serde_json::to_string_pretty(&json).unwrap_or_else(|_| "{}".to_string())
 }

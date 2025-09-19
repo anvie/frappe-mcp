@@ -76,7 +76,7 @@ pub struct GetDoctypeArgs {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct CreateDoctypeTemplateArgs {
+pub struct CreateDoctypeArgs {
     /// DocType name (e.g., "Task")
     pub name: String,
 
@@ -102,6 +102,10 @@ pub struct CreateDoctypeTemplateArgs {
     /// Whether the DocType is a child table (default: false)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_child_table: Option<bool>,
+
+    /// Naming series for the DocType (e.g., "TASK-.YY.MM.DD.####") - will be added as first field if provided
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub with_naming_series: Option<String>,
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema, Clone)]
@@ -404,36 +408,63 @@ impl ProjectExplorer {
         )
     }
 
-    /// create_doctype_template: Generate boilerplate DocType structure
+    /// create_doctype: Generate boilerplate DocType structure
     #[tool(
         description = "Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files"
     )]
-    fn create_doctype_template(
+    fn create_doctype(
         &self,
-        Parameters(args): Parameters<CreateDoctypeTemplateArgs>,
+        Parameters(args): Parameters<CreateDoctypeArgs>,
     ) -> Result<CallToolResult, McpError> {
         let mut anal = self.anal.lock().unwrap();
-        functools::create_doctype_template(
+        functools::create_doctype(
             &self.config,
             &mut anal,
             &args.name,
             &args.module,
-            args.fields.map(|fields| {
-                fields
-                    .into_iter()
-                    .map(|f| functools::FieldDefinition {
-                        fieldname: f.fieldname,
-                        fieldtype: f.fieldtype,
-                        label: f.label,
-                        reqd: f.reqd.map(|a| if a { 1 } else { 0 }),
-                        options: f.options,
-                        length: f.length,
-                        in_list_view: f.in_list_view.map(|a| if a { 1 } else { 0 }),
-                        in_standard_filter: f.in_standard_filter.map(|a| if a { 1 } else { 0 }),
-                        read_only: f.read_only.map(|a| if a { 1 } else { 0 }),
-                    })
-                    .collect()
-            }),
+            {
+                let mut final_fields = Vec::new();
+                
+                // Add naming_series field first if with_naming_series is provided
+                if let Some(naming_series) = &args.with_naming_series {
+                    final_fields.push(functools::FieldDefinition {
+                        fieldname: "naming_series".to_string(),
+                        fieldtype: "Select".to_string(),
+                        label: "Series".to_string(),
+                        reqd: Some(1),
+                        options: Some(naming_series.clone()),
+                        in_list_view: Some(0),
+                        in_standard_filter: Some(0),
+                        read_only: None,
+                        length: None,
+                    });
+                }
+                
+                // Add user-provided fields
+                if let Some(fields) = args.fields {
+                    final_fields.extend(
+                        fields
+                            .into_iter()
+                            .map(|f| functools::FieldDefinition {
+                                fieldname: f.fieldname,
+                                fieldtype: f.fieldtype,
+                                label: f.label,
+                                reqd: f.reqd.map(|a| if a { 1 } else { 0 }),
+                                options: f.options,
+                                length: f.length,
+                                in_list_view: f.in_list_view.map(|a| if a { 1 } else { 0 }),
+                                in_standard_filter: f.in_standard_filter.map(|a| if a { 1 } else { 0 }),
+                                read_only: f.read_only.map(|a| if a { 1 } else { 0 }),
+                            })
+                    );
+                }
+                
+                if final_fields.is_empty() {
+                    None
+                } else {
+                    Some(final_fields)
+                }
+            },
             Some(functools::DoctypeSettings {
                 is_single: args.is_single.unwrap_or(false),
                 is_tree: args.is_tree.unwrap_or(false),
@@ -977,7 +1008,7 @@ mod tests {
         assert!(r.has_route("find_symbols"));
         // assert!(r.has_route("get_function_signature"));
         assert!(r.has_route("get_doctype"));
-        assert!(r.has_route("create_doctype_template"));
+        assert!(r.has_route("create_doctype"));
         assert!(r.has_route("create_web_page"));
         assert!(r.has_route("create_custom_page"));
         assert!(r.has_route("run_tests"));

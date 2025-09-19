@@ -27,7 +27,7 @@ A Model Context Protocol (MCP) server designed to help AI agents understand and 
 
 - **`get_doctype`**: Get comprehensive DocType information by name (e.g., "Sales Invoice")
 - **`get_doctype_db_schema`**: Get the database schema for a specific DocType
-- **`create_doctype_template`**: Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files
+- **`create_doctype`**: Generate boilerplate DocType structure with JSON metadata, Python controller, and JS form files
 - **`analyze_links`**: Analyze and map relationships between DocTypes by examining Link, Table, and Select fields
 
 ### Development & Testing
