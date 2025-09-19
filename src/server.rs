@@ -184,6 +184,23 @@ pub struct CreateWebPageArgs {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct CreateCustomPageArgs {
+    /// Page name (e.g., "User Settings", will be converted to snake_case)
+    pub page_name: String,
+
+    /// Module where the page will be created (e.g., "Core", "Accounts")
+    pub module: String,
+
+    /// Page title for display (optional, defaults to page_name)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+
+    /// Roles that can access this page (optional, defaults to ["System Manager"])
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub roles: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct GetFieldUsageArgs {
     /// DocType name to search field usage in
     pub doctype: String,
@@ -466,6 +483,26 @@ impl ProjectExplorer {
             args.title,
             args.include_css,
             args.include_js,
+        )
+    }
+
+    /// create_custom_page: Generate Frappe custom page scaffolding with forms and API endpoints
+    #[tool(
+        description = "Generate Frappe custom page scaffolding with forms and backend API endpoints. \
+            Creates JSON, Python, and JavaScript files for a complete custom page structure."
+    )]
+    fn create_custom_page(
+        &self,
+        Parameters(args): Parameters<CreateCustomPageArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        let anal = self.anal.lock().unwrap();
+        functools::create_custom_page(
+            &self.config,
+            &anal,
+            &args.page_name,
+            &args.module,
+            args.title,
+            args.roles,
         )
     }
 
@@ -942,6 +979,7 @@ mod tests {
         assert!(r.has_route("get_doctype"));
         assert!(r.has_route("create_doctype_template"));
         assert!(r.has_route("create_web_page"));
+        assert!(r.has_route("create_custom_page"));
         assert!(r.has_route("run_tests"));
         assert!(r.has_route("analyze_links"));
         assert!(r.has_route("find_field_usage"));

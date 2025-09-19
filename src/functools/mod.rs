@@ -11,6 +11,7 @@
 // from Nuwaira.
 mod analyze_links;
 mod bench_execute;
+mod create_custom_page;
 mod create_doctype_template;
 mod create_report_template;
 mod create_test_template;
@@ -28,6 +29,7 @@ mod search_frappe_docs;
 
 pub use analyze_links::analyze_links;
 pub use bench_execute::bench_execute;
+pub use create_custom_page::create_custom_page;
 pub use create_doctype_template::{create_doctype_template, DoctypeSettings, FieldDefinition};
 pub use create_report_template::create_report_template;
 pub use create_test_template::create_test_template;
