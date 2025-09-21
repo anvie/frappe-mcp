@@ -1,6 +1,7 @@
 # Frappe Report Development Guide
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Report Types](#report-types)
 3. [Creating Reports](#creating-reports)
@@ -15,6 +16,7 @@
 Reports in Frappe are powerful tools for displaying and analyzing data from your application. The framework provides a comprehensive reporting system that supports various report types, filters, permissions, and data visualization options.
 
 ### Key Components
+
 - **Report DocType**: Core doctype that defines report metadata (frappe/core/doctype/report/report.py:20)
 - **Query Report Module**: Handles report execution and rendering (frappe/desk/query_report.py)
 - **Report View**: Frontend component for displaying reports (frappe/public/js/frappe/views/reports/query_report.js:30)
@@ -24,6 +26,7 @@ Reports in Frappe are powerful tools for displaying and analyzing data from your
 Frappe supports four main types of reports:
 
 ### 1. Report Builder
+
 - **Description**: Simple drag-and-drop interface for creating basic reports
 - **Use Case**: Quick reports without coding
 - **Location**: Created via the UI in Report View
@@ -34,12 +37,14 @@ Frappe supports four main types of reports:
   - No coding required
 
 ### 2. Query Report
+
 - **Description**: Reports based on SQL queries
 - **Use Case**: Complex database queries with joins
 - **Requirements**: SQL knowledge
 - **Security**: Uses `check_safe_sql_query()` for SQL injection prevention (frappe/core/doctype/report/report.py:149)
 
 ### 3. Script Report
+
 - **Description**: Python-based reports with full control over data processing
 - **Use Case**: Complex business logic, data manipulation, external API calls
 - **Files Required**:
@@ -48,6 +53,7 @@ Frappe supports four main types of reports:
   - JSON metadata: `{module}/report/{report_name}/{report_name}.json`
 
 ### 4. Custom Report
+
 - **Description**: Extends existing reports with custom columns and filters
 - **Use Case**: Customizing standard reports without modifying core code
 - **Reference**: Links to another report via `reference_report` field
@@ -64,6 +70,7 @@ Frappe supports four main types of reports:
 ### Method 2: Via Code (Script Report)
 
 #### Step 1: Create Report Metadata
+
 Create a new Report document programmatically or via UI:
 
 ```python
@@ -83,6 +90,7 @@ report.insert()
 ```
 
 #### Step 2: Create Python Handler
+
 Location: `{app}/{module}/report/{report_name}/{report_name}.py`
 
 ```python
@@ -224,6 +232,7 @@ def get_report_summary(data):
 ```
 
 #### Step 3: Create JavaScript Configuration (Optional)
+
 Location: `{app}/{module}/report/{report_name}/{report_name}.js`
 
 ```javascript
@@ -231,71 +240,76 @@ Location: `{app}/{module}/report/{report_name}/{report_name}.js`
 // For license information, please see license.txt
 
 frappe.query_reports["My Custom Report"] = {
-    "filters": [
-        {
-            "fieldname": "company",
-            "label": __("Company"),
-            "fieldtype": "Link",
-            "options": "Company",
-            "default": frappe.defaults.get_user_default("Company"),
-            "reqd": 1
-        },
-        {
-            "fieldname": "from_date",
-            "label": __("From Date"),
-            "fieldtype": "Date",
-            "default": frappe.datetime.add_months(frappe.datetime.get_today(), -1),
-            "reqd": 1
-        },
-        {
-            "fieldname": "to_date",
-            "label": __("To Date"),
-            "fieldtype": "Date",
-            "default": frappe.datetime.get_today(),
-            "reqd": 1
-        },
-        {
-            "fieldname": "customer",
-            "label": __("Customer"),
-            "fieldtype": "Link",
-            "options": "Customer",
-            "get_query": function() {
-                return {
-                    "filters": {
-                        "disabled": 0
-                    }
-                };
-            }
-        },
-        {
-            "fieldname": "status",
-            "label": __("Status"),
-            "fieldtype": "MultiSelect",
-            "options": "Draft\nTo Deliver and Bill\nTo Bill\nTo Deliver\nCompleted\nCancelled\nClosed",
-            "default": "To Deliver and Bill,To Bill,To Deliver"
-        }
-    ],
-
-    "formatter": function(value, row, column, data, default_formatter) {
-        value = default_formatter(value, row, column, data);
-
-        if (column.fieldname == "status") {
-            if (value == "Completed") {
-                value = "<span class='text-success'>" + value + "</span>";
-            } else if (value == "Cancelled") {
-                value = "<span class='text-danger'>" + value + "</span>";
-            }
-        }
-
-        return value;
+  filters: [
+    {
+      fieldname: "company",
+      label: __("Company"),
+      fieldtype: "Link",
+      options: "Company",
+      default: frappe.defaults.get_user_default("Company"),
+      reqd: 1,
     },
+    {
+      fieldname: "from_date",
+      label: __("From Date"),
+      fieldtype: "Date",
+      default: frappe.datetime.add_months(frappe.datetime.get_today(), -1),
+      reqd: 1,
+    },
+    {
+      fieldname: "to_date",
+      label: __("To Date"),
+      fieldtype: "Date",
+      default: frappe.datetime.get_today(),
+      reqd: 1,
+    },
+    {
+      fieldname: "customer",
+      label: __("Customer"),
+      fieldtype: "Link",
+      options: "Customer",
+      get_query: function () {
+        return {
+          filters: {
+            disabled: 0,
+          },
+        };
+      },
+    },
+    {
+      fieldname: "status",
+      label: __("Status"),
+      fieldtype: "MultiSelect",
+      options:
+        "Draft\nTo Deliver and Bill\nTo Bill\nTo Deliver\nCompleted\nCancelled\nClosed",
+      default: "To Deliver and Bill,To Bill,To Deliver",
+    },
+  ],
 
-    onload: function(report) {
-        // Custom initialization code
-        report.page.add_inner_button(__("Export to Excel"), function() {
-            frappe.tools.downloadify(report.get_data_for_csv(), null, report.report_name);
-        });
+  formatter: function (value, row, column, data, default_formatter) {
+    value = default_formatter(value, row, column, data);
+
+    if (column.fieldname == "status") {
+      if (value == "Completed") {
+        value = "<span class='text-success'>" + value + "</span>";
+      } else if (value == "Cancelled") {
+        value = "<span class='text-danger'>" + value + "</span>";
+      }
     }
+
+    return value;
+  },
+
+  onload: function (report) {
+    // Custom initialization code
+    report.page.add_inner_button(__("Export to Excel"), function () {
+      frappe.tools.downloadify(
+        report.get_data_for_csv(),
+        null,
+        report.report_name,
+      );
+    });
+  },
 };
 ```
 
@@ -326,6 +340,7 @@ ORDER BY so.transaction_date DESC
 Columns can be defined in multiple formats:
 
 #### 1. Dictionary Format (Recommended for Script Reports)
+
 ```python
 {
     "label": "Field Label",           # Display name
@@ -339,6 +354,7 @@ Columns can be defined in multiple formats:
 ```
 
 #### 2. String Format (Simple, used in Query Reports)
+
 ```python
 "Field Label:Fieldtype/Options:Width"
 # Examples:
@@ -348,6 +364,7 @@ Columns can be defined in multiple formats:
 ```
 
 ### Supported Field Types
+
 - **Data**: Plain text
 - **Link**: Link to another DocType
 - **Currency**: Monetary values
@@ -364,6 +381,7 @@ Columns can be defined in multiple formats:
 Data can be returned in two formats:
 
 #### 1. List of Lists
+
 ```python
 data = [
     ["SO-001", "Customer A", 1000.00, "Completed"],
@@ -372,6 +390,7 @@ data = [
 ```
 
 #### 2. List of Dictionaries (Recommended)
+
 ```python
 data = [
     {
@@ -386,6 +405,7 @@ data = [
 ## Permissions and Security
 
 ### Role-Based Access
+
 Reports use role-based permissions defined in the Report document (frappe/core/doctype/report/report.py:110-125):
 
 ```python
@@ -397,13 +417,16 @@ roles = [
 ```
 
 ### DocType Permissions
+
 Users must have "Report" permission on the referenced DocType:
+
 ```python
 if not frappe.has_permission(doc.ref_doctype, "report"):
     frappe.throw(_("Insufficient permissions"))
 ```
 
 ### Script Security
+
 - Query Reports validate SQL queries for safety (frappe/core/doctype/report/report.py:149)
 - Script Reports require "Script Manager" role for non-standard reports
 - Custom code execution uses `safe_exec` sandbox environment
@@ -411,6 +434,7 @@ if not frappe.has_permission(doc.ref_doctype, "report"):
 ## Advanced Features
 
 ### 1. Prepared Reports
+
 For long-running reports, enable prepared reports to run in background:
 
 ```python
@@ -422,6 +446,7 @@ timeout = 600  # seconds
 Automatic detection: Reports taking >15 seconds automatically suggest prepared mode (frappe/core/doctype/report/report.py:163-169)
 
 ### 2. Report Summary Cards
+
 Display key metrics above the report:
 
 ```python
@@ -437,6 +462,7 @@ report_summary = [
 ```
 
 ### 3. Charts Integration
+
 Add visualizations to reports:
 
 ```python
@@ -454,17 +480,19 @@ chart = {
 ```
 
 ### 4. Tree Reports
+
 For hierarchical data display:
 
 ```javascript
 frappe.query_reports["My Report"] = {
-    "tree": true,
-    "parent_field": "parent_account",
-    "initial_depth": 2
-}
+  tree: true,
+  parent_field: "parent_account",
+  initial_depth: 2,
+};
 ```
 
 ### 5. Custom Formatters
+
 Apply custom formatting to cells:
 
 ```javascript
@@ -480,6 +508,7 @@ Apply custom formatting to cells:
 ```
 
 ### 6. Drill-Down Reports
+
 Enable navigation to detailed views:
 
 ```python
@@ -494,12 +523,15 @@ Enable navigation to detailed views:
 ```
 
 ### 7. Export Options
+
 Reports automatically support multiple export formats:
+
 - Excel
 - CSV
 - PDF (if letter_head is configured)
 
 ### 8. Filters with Dependencies
+
 Create dynamic filter relationships:
 
 ```javascript
@@ -522,6 +554,7 @@ Create dynamic filter relationships:
 ## Best Practices
 
 ### 1. Performance Optimization
+
 - **Use indexes**: Ensure filtered fields have database indexes
 - **Limit results**: Add pagination or limits for large datasets
 - **Optimize queries**: Use EXPLAIN to analyze SQL performance
@@ -535,6 +568,7 @@ def get_cached_data():
 ```
 
 ### 2. Error Handling
+
 ```python
 def execute(filters=None):
     try:
@@ -549,7 +583,9 @@ def execute(filters=None):
 ```
 
 ### 3. Localization
+
 Always use translation functions:
+
 ```python
 from frappe import _
 
@@ -559,6 +595,7 @@ columns = [
 ```
 
 ### 4. Security Best Practices
+
 - **Never use string formatting for SQL**: Use parameterized queries
 - **Validate user permissions**: Check both role and record-level permissions
 - **Sanitize inputs**: Validate and clean filter values
@@ -578,6 +615,7 @@ frappe.db.sql(f"""
 ```
 
 ### 5. Testing
+
 Create test cases for reports:
 
 ```python
@@ -598,6 +636,7 @@ class TestMyReport(unittest.TestCase):
 ## Examples
 
 ### Example 1: Simple Script Report
+
 Location: frappe/desk/report/todo/todo.py:9-69
 
 ```python
@@ -631,31 +670,33 @@ def execute(filters=None):
 ```
 
 ### Example 2: Report with Dynamic Filters
+
 Location: frappe/contacts/report/addresses_and_contacts/addresses_and_contacts.js:4-33
 
 ```javascript
 frappe.query_reports["Addresses And Contacts"] = {
-    filters: [
-        {
-            reqd: 1,
-            fieldname: "reference_doctype",
-            label: __("Entity Type"),
-            fieldtype: "Link",
-            options: "DocType"
-        },
-        {
-            fieldname: "reference_name",
-            label: __("Entity Name"),
-            fieldtype: "Dynamic Link",
-            get_options: function() {
-                return frappe.query_report.get_filter_value("reference_doctype");
-            }
-        }
-    ]
+  filters: [
+    {
+      reqd: 1,
+      fieldname: "reference_doctype",
+      label: __("Entity Type"),
+      fieldtype: "Link",
+      options: "DocType",
+    },
+    {
+      fieldname: "reference_name",
+      label: __("Entity Name"),
+      fieldtype: "Dynamic Link",
+      get_options: function () {
+        return frappe.query_report.get_filter_value("reference_doctype");
+      },
+    },
+  ],
 };
 ```
 
 ### Example 3: Report with Permissions Check
+
 Location: frappe/core/report/permitted_documents_for_user/permitted_documents_for_user.py:10-29
 
 ```python
@@ -697,11 +738,13 @@ app_name/
 ## Debugging Tips
 
 ### 1. Enable SQL Query Logging
+
 ```python
 frappe.flags.print_sql = True
 ```
 
 ### 2. Debug Report Execution
+
 ```python
 # In frappe console
 from app.module.report.report_name.report_name import execute
@@ -710,17 +753,20 @@ print(columns, data)
 ```
 
 ### 3. Check Report Permissions
+
 ```python
 report = frappe.get_doc("Report", "Report Name")
 print(report.is_permitted())  # Check if current user has access
 ```
 
 ### 4. Monitor Performance
+
 Use `frappe.cache.hget("report_execution_time", report_name)` to check execution times.
 
 ## Migration and Deployment
 
 ### Exporting Reports
+
 Standard reports are automatically exported when `is_standard = "Yes"` and developer mode is enabled:
 
 ```python
@@ -729,6 +775,7 @@ Standard reports are automatically exported when `is_standard = "Yes"` and devel
 ```
 
 ### Including in App
+
 1. Set `is_standard = "Yes"`
 2. Assign to appropriate module
 3. Reports are automatically included in app migrations
@@ -738,6 +785,7 @@ Standard reports are automatically exported when `is_standard = "Yes"` and devel
 Frappe's reporting framework provides a flexible and powerful system for creating various types of reports. From simple Report Builder reports to complex Script Reports with charts and summaries, the framework handles diverse reporting needs while maintaining security and performance.
 
 Key takeaways:
+
 - Choose the right report type for your use case
 - Follow security best practices
 - Optimize for performance
@@ -745,3 +793,4 @@ Key takeaways:
 - Test thoroughly
 
 For more examples, explore the existing reports in the frappe/core/report and frappe/desk/report directories.
+
