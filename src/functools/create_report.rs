@@ -21,7 +21,7 @@ use rmcp::{model::*, ErrorData as McpError};
 
 type McpResult = Result<CallToolResult, McpError>;
 
-pub fn create_report_template(
+pub fn create_report(
     config: &Config,
     _anal: &mut AnalyzedData,
     report_name: &str,

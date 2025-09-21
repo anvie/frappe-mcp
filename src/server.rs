@@ -424,7 +424,7 @@ impl ProjectExplorer {
             &args.module,
             {
                 let mut final_fields = Vec::new();
-                
+
                 // Add naming_series field first if with_naming_series is provided
                 if let Some(naming_series) = &args.with_naming_series {
                     final_fields.push(functools::FieldDefinition {
@@ -439,26 +439,22 @@ impl ProjectExplorer {
                         length: None,
                     });
                 }
-                
+
                 // Add user-provided fields
                 if let Some(fields) = args.fields {
-                    final_fields.extend(
-                        fields
-                            .into_iter()
-                            .map(|f| functools::FieldDefinition {
-                                fieldname: f.fieldname,
-                                fieldtype: f.fieldtype,
-                                label: f.label,
-                                reqd: f.reqd.map(|a| if a { 1 } else { 0 }),
-                                options: f.options,
-                                length: f.length,
-                                in_list_view: f.in_list_view.map(|a| if a { 1 } else { 0 }),
-                                in_standard_filter: f.in_standard_filter.map(|a| if a { 1 } else { 0 }),
-                                read_only: f.read_only.map(|a| if a { 1 } else { 0 }),
-                            })
-                    );
+                    final_fields.extend(fields.into_iter().map(|f| functools::FieldDefinition {
+                        fieldname: f.fieldname,
+                        fieldtype: f.fieldtype,
+                        label: f.label,
+                        reqd: f.reqd.map(|a| if a { 1 } else { 0 }),
+                        options: f.options,
+                        length: f.length,
+                        in_list_view: f.in_list_view.map(|a| if a { 1 } else { 0 }),
+                        in_standard_filter: f.in_standard_filter.map(|a| if a { 1 } else { 0 }),
+                        read_only: f.read_only.map(|a| if a { 1 } else { 0 }),
+                    }));
                 }
-                
+
                 if final_fields.is_empty() {
                     None
                 } else {
@@ -653,17 +649,17 @@ impl ProjectExplorer {
         )
     }
 
-    /// create_report_template: Create report template files for a Frappe Report
+    /// create_report: Create report template files for a Frappe Report
     #[tool(
         description = "Create report template files for starting with Frappe Report including Python logic file (.py), JavaScript filters (.js), JSON metadata (.json). \
             Creates a complete report structure with sample filters, columns, and data processing logic."
     )]
-    fn create_report_template(
+    fn create_report(
         &self,
         Parameters(args): Parameters<CreateReportTemplateArgs>,
     ) -> Result<CallToolResult, McpError> {
         let mut anal = self.anal.lock().unwrap();
-        functools::create_report_template(
+        functools::create_report(
             &self.config,
             &mut anal,
             &args.report_name,
@@ -1019,6 +1015,7 @@ mod tests {
         assert!(r.has_route("run_db_command"));
         assert!(r.has_route("create_test_template"));
         assert!(r.has_route("list_doctypes"));
+        assert!(r.has_route("create_report"));
     }
 
     // #[tokio::test]
