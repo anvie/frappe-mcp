@@ -7,6 +7,7 @@ Frappe automatically generates REST API endpoints for all DocTypes. The API supp
 ## Authentication
 
 ### Token Based
+
 ```bash
 # Get API keys from User Settings
 curl -X POST "https://site.com/api/method/frappe.auth.get_logged_user" \
@@ -14,6 +15,7 @@ curl -X POST "https://site.com/api/method/frappe.auth.get_logged_user" \
 ```
 
 ### Password Based
+
 ```bash
 # Login and get session
 curl -X POST "https://site.com/api/method/login" \
@@ -24,6 +26,7 @@ curl -X POST "https://site.com/api/method/login" \
 ## Standard CRUD Operations
 
 ### Create (POST)
+
 ```bash
 # Create new document
 curl -X POST "https://site.com/api/resource/Customer" \
@@ -37,6 +40,7 @@ curl -X POST "https://site.com/api/resource/Customer" \
 ```
 
 ### Read (GET)
+
 ```bash
 # Get single document
 curl "https://site.com/api/resource/Customer/CUST-0001" \
@@ -48,6 +52,7 @@ curl "https://site.com/api/resource/Customer?filters=[[\"disabled\",\"=\",0]]&fi
 ```
 
 ### Update (PUT)
+
 ```bash
 # Update document
 curl -X PUT "https://site.com/api/resource/Customer/CUST-0001" \
@@ -60,6 +65,7 @@ curl -X PUT "https://site.com/api/resource/Customer/CUST-0001" \
 ```
 
 ### Delete (DELETE)
+
 ```bash
 # Delete document
 curl -X DELETE "https://site.com/api/resource/Customer/CUST-0001" \
@@ -69,12 +75,14 @@ curl -X DELETE "https://site.com/api/resource/Customer/CUST-0001" \
 ## Query Parameters
 
 ### Fields Selection
+
 ```bash
 # Select specific fields
 GET /api/resource/Customer?fields=["name","customer_name","email"]
 ```
 
 ### Filtering
+
 ```bash
 # Simple filter
 GET /api/resource/Customer?filters=[["customer_type","=","Company"]]
@@ -87,6 +95,7 @@ GET /api/resource/Sales Order?filters=[["grand_total",">",1000],["status","in",[
 ```
 
 ### Pagination
+
 ```bash
 # Limit and offset
 GET /api/resource/Customer?limit=20&offset=40
@@ -96,6 +105,7 @@ GET /api/resource/Customer?limit_start=40&limit_page_length=20
 ```
 
 ### Sorting
+
 ```bash
 # Order by field
 GET /api/resource/Customer?order_by=creation desc
@@ -107,6 +117,7 @@ GET /api/resource/Customer?order_by=customer_group asc,creation desc
 ## Advanced Filtering
 
 ### Filter Operators
+
 - `=` : Equals
 - `!=` : Not equals
 - `>` : Greater than
@@ -121,13 +132,14 @@ GET /api/resource/Customer?order_by=customer_group asc,creation desc
 - `is` : IS NULL or IS NOT NULL
 
 ### Examples
+
 ```javascript
 // JavaScript/Node.js example
 const filters = [
-    ["customer_name", "like", "%John%"],
-    ["creation", "between", ["2024-01-01", "2024-12-31"]],
-    ["status", "in", ["Active", "Prospective"]],
-    ["credit_limit", ">", 10000]
+  ["customer_name", "like", "%John%"],
+  ["creation", "between", ["2024-01-01", "2024-12-31"]],
+  ["status", "in", ["Active", "Prospective"]],
+  ["credit_limit", ">", 10000],
 ];
 
 const url = `https://site.com/api/resource/Customer?filters=${JSON.stringify(filters)}`;
@@ -136,11 +148,12 @@ const url = `https://site.com/api/resource/Customer?filters=${JSON.stringify(fil
 ## Custom Methods
 
 ### Call Whitelisted Methods
+
 ```python
 # In Python file
 @frappe.whitelist()
 def get_customer_orders(customer):
-    return frappe.db.get_list("Sales Order", 
+    return frappe.db.get_list("Sales Order",
         filters={"customer": customer},
         fields=["name", "grand_total", "status"]
     )
@@ -154,6 +167,7 @@ curl -X POST "https://site.com/api/method/myapp.api.get_customer_orders" \
 ```
 
 ### RPC Style Calls
+
 ```bash
 # Call any whitelisted function
 curl -X POST "https://site.com/api/method/frappe.client.get_list" \
@@ -170,6 +184,7 @@ curl -X POST "https://site.com/api/method/frappe.client.get_list" \
 ## File Operations
 
 ### Upload File
+
 ```bash
 # Upload file attachment
 curl -X POST "https://site.com/api/method/upload_file" \
@@ -181,6 +196,7 @@ curl -X POST "https://site.com/api/method/upload_file" \
 ```
 
 ### Get File
+
 ```bash
 # Download file
 curl "https://site.com/api/method/frappe.utils.file_manager.download_file" \
@@ -191,6 +207,7 @@ curl "https://site.com/api/method/frappe.utils.file_manager.download_file" \
 ## Batch Operations
 
 ### Multiple Creates
+
 ```python
 # Python example for batch insert
 @frappe.whitelist()
@@ -208,6 +225,7 @@ def batch_create_customers(customers):
 ```
 
 ### Bulk Update
+
 ```python
 @frappe.whitelist()
 def bulk_update_status(doctype, names, status):
@@ -220,6 +238,7 @@ def bulk_update_status(doctype, names, status):
 ## Response Format
 
 ### Success Response
+
 ```json
 {
   "data": {
@@ -233,6 +252,7 @@ def bulk_update_status(doctype, names, status):
 ```
 
 ### Error Response
+
 ```json
 {
   "exc_type": "ValidationError",
@@ -242,11 +262,12 @@ def bulk_update_status(doctype, names, status):
 ```
 
 ### List Response
+
 ```json
 {
   "data": [
-    {"name": "CUST-0001", "customer_name": "John Doe"},
-    {"name": "CUST-0002", "customer_name": "Jane Smith"}
+    { "name": "CUST-0001", "customer_name": "John Doe" },
+    { "name": "CUST-0002", "customer_name": "Jane Smith" }
   ]
 }
 ```
@@ -254,53 +275,63 @@ def bulk_update_status(doctype, names, status):
 ## JavaScript/Fetch Examples
 
 ### GET Request
+
 ```javascript
 async function getCustomer(name) {
-    const response = await fetch(`https://site.com/api/resource/Customer/${name}`, {
-        headers: {
-            'Authorization': 'token api_key:api_secret'
-        }
-    });
-    return await response.json();
+  const response = await fetch(
+    `https://site.com/api/resource/Customer/${name}`,
+    {
+      headers: {
+        Authorization: "token api_key:api_secret",
+      },
+    },
+  );
+  return await response.json();
 }
 ```
 
 ### POST Request
+
 ```javascript
 async function createCustomer(data) {
-    const response = await fetch('https://site.com/api/resource/Customer', {
-        method: 'POST',
-        headers: {
-            'Authorization': 'token api_key:api_secret',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-    return await response.json();
+  const response = await fetch("https://site.com/api/resource/Customer", {
+    method: "POST",
+    headers: {
+      Authorization: "token api_key:api_secret",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+  return await response.json();
 }
 ```
 
 ### With Query Parameters
+
 ```javascript
 async function getCustomerList(filters = {}) {
-    const params = new URLSearchParams({
-        fields: JSON.stringify(["name", "customer_name", "email"]),
-        filters: JSON.stringify(filters),
-        limit: 20
-    });
-    
-    const response = await fetch(`https://site.com/api/resource/Customer?${params}`, {
-        headers: {
-            'Authorization': 'token api_key:api_secret'
-        }
-    });
-    return await response.json();
+  const params = new URLSearchParams({
+    fields: JSON.stringify(["name", "customer_name", "email"]),
+    filters: JSON.stringify(filters),
+    limit: 20,
+  });
+
+  const response = await fetch(
+    `https://site.com/api/resource/Customer?${params}`,
+    {
+      headers: {
+        Authorization: "token api_key:api_secret",
+      },
+    },
+  );
+  return await response.json();
 }
 ```
 
 ## Python Client Examples
 
 ### Using requests library
+
 ```python
 import requests
 import json
@@ -312,14 +343,14 @@ class FrappeClient:
             'Authorization': f'token {api_key}:{api_secret}',
             'Content-Type': 'application/json'
         }
-    
+
     def get_doc(self, doctype, name):
         response = requests.get(
             f"{self.url}/api/resource/{doctype}/{name}",
             headers=self.headers
         )
         return response.json()
-    
+
     def create_doc(self, doctype, data):
         response = requests.post(
             f"{self.url}/api/resource/{doctype}",
@@ -327,7 +358,7 @@ class FrappeClient:
             data=json.dumps(data)
         )
         return response.json()
-    
+
     def update_doc(self, doctype, name, data):
         response = requests.put(
             f"{self.url}/api/resource/{doctype}/{name}",
@@ -376,3 +407,4 @@ webhook = frappe.get_doc({
 6. **Field Selection**: Only request needed fields
 7. **Pagination**: Always paginate large datasets
 8. **Compression**: Enable gzip compression for responses
+
