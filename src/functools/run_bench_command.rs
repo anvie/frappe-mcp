@@ -41,7 +41,7 @@ pub fn run_bench_command(config: &Config, _anal: &AnalyzedData, args: &[&str]) -
             }
         }
     }
-    shellutil::run_bench_command(config, args)
+    shellutil::run_bench_command(config, args, 5000)
         .map_err(|e| McpError::new(ErrorCode::INTERNAL_ERROR, format!("{}", e), None))
         .and_then(|output| mcp_return!(output))
 }

@@ -25,7 +25,7 @@ mod shellutil;
 mod stringutil;
 
 use config::Config;
-use rmcp::model::{CallToolResult, RawTextContent};
+use rmcp::model::{CallToolResult, RawTextContent, ErrorCode};
 
 fn print_tool_result(result: CallToolResult) {
     // For CLI output, extract text from content items
@@ -99,6 +99,13 @@ enum CommandEnum {
         #[arg(help = "Document ID (e.g., a7b9c3, d8f2e1). Use search-docs to find IDs.")]
         id: String,
     },
+    /// Execute functool functions for testing
+    Functool {
+        #[arg(help = "Function name: get-doctype, list-doctypes, run-bench-command, find-field-usage, find-symbols")]
+        function: String,
+        #[arg(help = "Function arguments (use functool <function> --help for details)", num_args = 0..)]
+        args: Vec<String>,
+    },
     /// Print version info
     Version,
 }
@@ -114,6 +121,80 @@ fn parse_args() -> (Args, Config) {
     });
 
     (args, config)
+}
+
+async fn execute_functool(config: &Config, function: &str, args: &[String]) -> Result<CallToolResult, rmcp::ErrorData> {
+    // Use default analysis file path
+    let analysis_file = "analyzed_output.dat";
+    let analyzed_data = analyze::AnalyzedData::from_file(analysis_file).map_err(|_| {
+        rmcp::ErrorData::new(
+            ErrorCode::INVALID_REQUEST,
+            "Failed to load analyzed data. Run 'frappe-mcp analyze' first.",
+            None,
+        )
+    })?;
+
+    match function {
+        "get-doctype" | "get_doctype" => {
+            if args.is_empty() {
+                return Err(rmcp::ErrorData::new(
+                    ErrorCode::INVALID_REQUEST,
+                    "get-doctype requires a doctype name",
+                    None,
+                ));
+            }
+            let json_only = args.get(1).map(|s| s == "true" || s == "json").unwrap_or(false);
+            functools::get_doctype(config, &analyzed_data, &args[0], json_only)
+        }
+        "list-doctypes" | "list_doctypes" => {
+            let module_filter = args.get(0).cloned();
+            functools::list_doctypes(config, &analyzed_data, module_filter)
+        }
+        "run-bench-command" | "run_bench_command" => {
+            if args.is_empty() {
+                return Err(rmcp::ErrorData::new(
+                    ErrorCode::INVALID_REQUEST,
+                    "run-bench-command requires a command",
+                    None,
+                ));
+            }
+            // Convert Vec<String> to Vec<&str>
+            let str_args: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+            functools::run_bench_command(config, &analyzed_data, &str_args)
+        }
+        "find-field-usage" | "find_field_usage" => {
+            if args.len() < 2 {
+                return Err(rmcp::ErrorData::new(
+                    ErrorCode::INVALID_REQUEST,
+                    "find-field-usage requires doctype and field name",
+                    None,
+                ));
+            }
+            let limit = args.get(2)
+                .and_then(|s| s.parse::<usize>().ok());
+            functools::find_field_usage(config, &analyzed_data, &args[0], &args[1], limit)
+        }
+        "find-symbols" | "find_symbols" => {
+            if args.is_empty() {
+                return Err(rmcp::ErrorData::new(
+                    ErrorCode::INVALID_REQUEST,
+                    "find-symbols requires a symbol pattern",
+                    None,
+                ));
+            }
+            let search_in = args.get(1).cloned();
+            let fuzzy = args.get(2).map(|s| s == "true").or(Some(false));
+            let limit = args.get(3).and_then(|s| s.parse::<usize>().ok());
+            functools::find_symbols(config, &analyzed_data, &args[0], search_in, fuzzy, limit)
+        }
+        _ => {
+            Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_REQUEST,
+                "Unknown function. Use --help to see available functions.",
+                None,
+            ))
+        }
+    }
 }
 
 #[tokio::main]
@@ -167,6 +248,18 @@ async fn main() {
                 }
                 Err(e) => {
                     eprintln!("Read error: {}", e.message);
+                    exit(1);
+                }
+            }
+            return;
+        }
+        CommandEnum::Functool { function, args } => {
+            match execute_functool(&config, &function, &args).await {
+                Ok(result) => {
+                    print_tool_result(result);
+                }
+                Err(e) => {
+                    eprintln!("Functool error: {}", e.message);
                     exit(1);
                 }
             }

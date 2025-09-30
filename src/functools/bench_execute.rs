@@ -39,7 +39,7 @@ pub fn bench_execute(
 
     let args_refs: Vec<&str> = command_args.iter().map(|s| s.as_str()).collect();
 
-    shellutil::run_bench_command(config, &args_refs)
+    shellutil::run_bench_command(config, &args_refs, 5000)
         .map_err(|e| McpError::new(ErrorCode::INTERNAL_ERROR, format!("{}", e), None))
         .and_then(|output| mcp_return!(output))
 }

@@ -19,7 +19,7 @@ use crate::config::Config;
 
 use anyhow::{bail, Context, Result};
 
-pub fn run_bench_command<I, S>(config: &Config, args: I) -> Result<String>
+pub fn run_bench_command<I, S>(config: &Config, args: I, max_chars: usize) -> Result<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
@@ -57,8 +57,8 @@ where
     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
     if !output.status.success() {
-        let truncated_stdout = truncate_output(&stdout, 3000);
-        let truncated_stderr = truncate_output(&stderr, 3000);
+        let truncated_stdout = truncate_output(&stdout, max_chars);
+        let truncated_stderr = truncate_output(&stderr, max_chars);
         bail!(format!(
             "bench exited with code {:?}\nSTDOUT:\n{}\n\nSTDERR:\n{}",
             output.status.code(),
@@ -67,20 +67,21 @@ where
         ));
     }
 
-    let truncated_stdout = truncate_output(&stdout, 5000);
-    let truncated_stderr = truncate_output(&stderr, 5000);
+    let truncated_stdout = truncate_output(&stdout, max_chars);
+    let truncated_stderr = truncate_output(&stderr, max_chars);
 
-    Ok(format!(
-        "STDOUT:\n{}\n\nSTDERR:\n{}",
-        truncated_stdout, truncated_stderr
-    ))
+    Ok(format!("{}\n{}", truncated_stdout, truncated_stderr))
 }
 
 pub fn run_db_command(config: &Config, sql: &str) -> Result<String> {
-    run_bench_command(config, &["mariadb", "-e", sql])
+    run_bench_command(config, &["mariadb", "-e", sql], 5000)
 }
 
 fn truncate_output(output: &str, max_chars: usize) -> String {
+    if max_chars == 0 {
+        return output.to_string();
+    }
+
     // If within character limit, return as-is
     if output.len() <= max_chars {
         return output.to_string();
@@ -148,7 +149,10 @@ mod tests {
     fn test_truncate_output_single_char() {
         let input = "a";
         let result = truncate_output(input, 0);
-        assert_eq!(result, "\n... (truncated 1 chars)");
+        assert_eq!(result, "a");
+        let input = "ab";
+        let result = truncate_output(input, 0);
+        assert_eq!(result, "ab");
     }
 
     #[test]
