@@ -17,6 +17,7 @@ use std::path::Path;
 
 use crate::analyze::{AnalyzedData, DocType};
 use crate::config::Config;
+use crate::serdeutil::deserialize_bool_from_int_or_bool_to_int;
 use crate::stringutil::{to_pascalc, to_snakec_var};
 use rmcp::{model::*, ErrorData as McpError};
 
@@ -35,10 +36,14 @@ pub struct FieldDefinition {
     pub fieldname: String,
     pub fieldtype: String,
     pub label: String,
+    #[serde(default, deserialize_with = "deserialize_bool_from_int_or_bool_to_int")]
     pub reqd: Option<u16>,
     pub options: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_bool_from_int_or_bool_to_int")]
     pub in_list_view: Option<u16>,
+    #[serde(default, deserialize_with = "deserialize_bool_from_int_or_bool_to_int")]
     pub in_standard_filter: Option<u16>,
+    #[serde(default, deserialize_with = "deserialize_bool_from_int_or_bool_to_int")]
     pub read_only: Option<u16>,
     pub length: Option<u32>,
 }
@@ -160,7 +165,7 @@ fn create_json_metadata(
 ) -> String {
     // Check if any field is a naming_series field
     let has_naming_series = fields.iter().any(|f| f.fieldname == "naming_series");
-    
+
     // Use fields as-is
     let default_fields = fields;
 
