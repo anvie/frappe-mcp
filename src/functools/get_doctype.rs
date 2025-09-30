@@ -15,9 +15,11 @@ use std::path::Path;
 
 use crate::analyze::AnalyzedData;
 use crate::config::Config;
+use crate::functools::bench_execute;
 use crate::serdeutil::deserialize_bool_from_int_or_bool;
 use crate::stringutil::to_snakec_var;
 use rmcp::{model::*, ErrorData as McpError};
+use serde_json::Value;
 
 type McpResult = Result<CallToolResult, McpError>;
 
@@ -100,7 +102,8 @@ pub fn get_doctype(config: &Config, anal: &AnalyzedData, name: &str, json_only: 
                 target, target_snake
             ));
         } else {
-            result.push(format!("DocType '{}' not found", target));
+            // Try to get from database
+            return get_doctype_from_database(config, anal, name, json_only);
         }
         mcp_return!(result.join("\n"));
     }
@@ -271,6 +274,151 @@ fn parse_doctype_metadata_string(json_content: &str) -> Result<DocTypeStruct, Mc
         )
     })?;
     Ok(doc_struct)
+}
+
+fn get_doctype_from_database(
+    config: &Config,
+    anal: &AnalyzedData,
+    name: &str,
+    json_only: bool,
+) -> McpResult {
+    let mut result: Vec<String> = Vec::new();
+
+    // Get DocType metadata from database using print with frappe.get_meta().as_json()
+    let args = format!("(frappe.get_meta(\"{}\").as_json(),)", name);
+
+    let meta_result = bench_execute(config, anal, "print", Some(&args), None);
+
+    if meta_result.is_err() {
+        // bench execute failed
+        mcp_return!(format!(
+            "DocType '{}' not found in current app '{}'. Database query failed.",
+            name, config.app_name
+        ));
+    }
+    let meta_response = meta_result.unwrap();
+
+    if let Some(text_content) = meta_response.content.first().and_then(|c| c.as_text()) {
+        let output = &text_content.text;
+
+        // Parse the STDOUT section to get the JSON output
+        if let Some(stdout_start) = output.find("STDOUT:\n") {
+            let stdout_content = &output[stdout_start + 8..]; // Skip "STDOUT:\n"
+            if let Some(stderr_start) = stdout_content.find("\n\nSTDERR:") {
+                let json_str = &stdout_content[..stderr_start].trim();
+
+                if json_only {
+                    mcp_return!(json_str.to_string());
+                }
+
+                // Parse the JSON to extract information
+                match serde_json::from_str::<Value>(json_str) {
+                    Ok(meta_json) => {
+                        result.push(format!(
+                            "DocType '{}' found in database (not in current app '{}')\n",
+                            name, config.app_name
+                        ));
+
+                        // Extract module info
+                        if let Some(module) = meta_json.get("module").and_then(|m| m.as_str()) {
+                            result.push(format!("- Module: {}", module));
+
+                            // Construct likely controller path
+                            let doctype_snake = to_snakec_var(name);
+                            let module_snake = to_snakec_var(module);
+
+                            // Common apps to check
+                            let common_apps = vec![
+                                "frappe",
+                                "erpnext",
+                                "hrms",
+                                "education",
+                                "healthcare",
+                                &config.app_name,
+                            ];
+
+                            for app in common_apps {
+                                let potential_path = format!(
+                                    "{}/apps/{}/{}/{}/doctype/{}/{}.py",
+                                    config.frappe_bench_dir,
+                                    app,
+                                    app,
+                                    module_snake,
+                                    doctype_snake,
+                                    doctype_snake
+                                );
+
+                                result.push(format!("- Backend (likely): {}", potential_path));
+                                // check if exists
+                                if Path::new(&potential_path).exists() {
+                                    result.push("  (File exists)".to_string());
+                                    break;
+                                } else {
+                                    result.push("  (File not found)".to_string());
+                                }
+                            }
+                        }
+
+                        result.push("- Metadata: (from database)".to_string());
+
+                        // Parse and display fields
+                        if let Ok(doc_struct) = parse_doctype_metadata_string(json_str) {
+                            result.push("\n## Basic Structure".to_string());
+                            result.push(format!("- Default View: {}", doc_struct.default_view));
+
+                            if let Some(is_single) = doc_struct.is_single {
+                                result.push(format!("- Is Single: {}", is_single));
+                            }
+                            if let Some(is_child) = doc_struct.is_child {
+                                result.push(format!("- Is Child Table: {}", is_child));
+                            }
+
+                            result.push("- Fields:".to_string());
+                            for field in doc_struct.fields.iter().take(20) {
+                                result.push(format!(
+                                    "  - {} - \"{}\" ({}){}",
+                                    &field.fieldname,
+                                    field.label.as_ref().unwrap_or(&field.fieldname),
+                                    field.fieldtype,
+                                    if field.reqd.unwrap_or(false) {
+                                        " [Required]"
+                                    } else {
+                                        ""
+                                    }
+                                ));
+                            }
+                            if doc_struct.fields.len() > 20 {
+                                result.push(format!(
+                                    "  ... and {} more fields",
+                                    doc_struct.fields.len() - 20
+                                ));
+                            }
+                        }
+
+                        result.push(format!(
+                                    "\nNote: This DocType is not in the current app '{}' but is available in the site.", 
+                                    config.app_name
+                                ));
+
+                        mcp_return!(result.join("\n"));
+                    }
+                    Err(_) => {
+                        // Not a valid DocType
+                        mcp_return!(format!(
+                            "DocType '{}' not found in current app '{}' or in the database",
+                            name, config.app_name
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    // If we couldn't parse the response
+    mcp_return!(format!(
+        "DocType '{}' not found in current app '{}'. Failed to parse database response.",
+        name, config.app_name
+    ));
 }
 
 #[cfg(test)]
