@@ -36,6 +36,27 @@ pub fn run_tests(
     let app_name_snake = to_snakec_var(&config.app_name);
     let snake_doctype = to_snakec_var(doctype.as_deref().unwrap_or(""));
 
+    // Remove `.test_log` file if exists
+    // When running tests, we need to make sure file `.test_log` in
+    // `frappe-bench/sites/[site-name]/.test_log` is removed, otherwise the test runner won't create
+    // test records from test_records.json
+    let test_log_path = Path::new(&bench_path)
+        .join("sites")
+        .join(&config.site)
+        .join(".test_log");
+
+    if test_log_path.exists() {
+        if let Err(e) = std::fs::remove_file(&test_log_path) {
+            tracing::warn!(
+                "Failed to remove .test_log file at {:?}: {}",
+                test_log_path,
+                e
+            );
+        } else {
+            tracing::debug!("Removed existing .test_log file at {:?}", test_log_path);
+        }
+    }
+
     cmd_args.push("--site".to_string());
     cmd_args.push(config.site.clone());
     cmd_args.push("run-tests".to_string());

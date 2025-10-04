@@ -25,7 +25,7 @@ mod shellutil;
 mod stringutil;
 
 use config::Config;
-use rmcp::model::{CallToolResult, RawTextContent, ErrorCode};
+use rmcp::model::{CallToolResult, ErrorCode, RawTextContent};
 
 fn print_tool_result(result: CallToolResult) {
     // For CLI output, extract text from content items
@@ -101,7 +101,9 @@ enum CommandEnum {
     },
     /// Execute functool functions for testing
     Functool {
-        #[arg(help = "Function name: get-doctype, list-doctypes, run-bench-command, find-field-usage, find-symbols")]
+        #[arg(
+            help = "Function name: get-doctype, list-doctypes, run-bench-command, find-field-usage, find-symbols"
+        )]
         function: String,
         #[arg(help = "Function arguments (use functool <function> --help for details)", num_args = 0..)]
         args: Vec<String>,
@@ -123,7 +125,11 @@ fn parse_args() -> (Args, Config) {
     (args, config)
 }
 
-async fn execute_functool(config: &Config, function: &str, args: &[String]) -> Result<CallToolResult, rmcp::ErrorData> {
+async fn execute_functool(
+    config: &Config,
+    function: &str,
+    args: &[String],
+) -> Result<CallToolResult, rmcp::ErrorData> {
     // Use default analysis file path
     let analysis_file = "analyzed_output.dat";
     let analyzed_data = analyze::AnalyzedData::from_file(analysis_file).map_err(|_| {
@@ -143,7 +149,10 @@ async fn execute_functool(config: &Config, function: &str, args: &[String]) -> R
                     None,
                 ));
             }
-            let json_only = args.get(1).map(|s| s == "true" || s == "json").unwrap_or(false);
+            let json_only = args
+                .get(1)
+                .map(|s| s == "true" || s == "json")
+                .unwrap_or(false);
             functools::get_doctype(config, &analyzed_data, &args[0], json_only)
         }
         "list-doctypes" | "list_doctypes" => {
@@ -170,8 +179,7 @@ async fn execute_functool(config: &Config, function: &str, args: &[String]) -> R
                     None,
                 ));
             }
-            let limit = args.get(2)
-                .and_then(|s| s.parse::<usize>().ok());
+            let limit = args.get(2).and_then(|s| s.parse::<usize>().ok());
             functools::find_field_usage(config, &analyzed_data, &args[0], &args[1], limit)
         }
         "find-symbols" | "find_symbols" => {
@@ -187,13 +195,11 @@ async fn execute_functool(config: &Config, function: &str, args: &[String]) -> R
             let limit = args.get(3).and_then(|s| s.parse::<usize>().ok());
             functools::find_symbols(config, &analyzed_data, &args[0], search_in, fuzzy, limit)
         }
-        _ => {
-            Err(rmcp::ErrorData::new(
-                ErrorCode::INVALID_REQUEST,
-                "Unknown function. Use --help to see available functions.",
-                None,
-            ))
-        }
+        _ => Err(rmcp::ErrorData::new(
+            ErrorCode::INVALID_REQUEST,
+            "Unknown function. Use --help to see available functions.",
+            None,
+        )),
     }
 }
 
