@@ -73,6 +73,15 @@ cargo run -- --config frappe-mcp.conf run
 
 The server will automatically analyze your Frappe application on first run or when source files change.
 
+Use with Claude Code:
+
+```bash
+claude mcp add frappe_mcp ./target/release/frappe_mcp run
+```
+
+Make sure you have `frapppe-mcp.conf` file in the same directory where you run
+the claude.
+
 ### Testing
 
 Use the MCP Inspector to test the server:
@@ -137,6 +146,7 @@ cargo run -- functool run-bench-command "list-apps"
 ```
 
 Available functions:
+
 - `get-doctype`: Get comprehensive DocType information
 - `list-doctypes`: List DocTypes, optionally filtered by module
 - `find-symbols`: Search for function/class symbols in code
@@ -183,12 +193,5 @@ cargo run -- read-doc "454ba4"  # ID for database_api.md
 - `--category`: Filter by category (`doctypes`, `api`, `tutorial`)
 - `--fuzzy`: Enable fuzzy search (default: true)
 - `--limit`: Maximum number of results (default: 10)
-
-## Project Structure
-
-- `src/main.rs`: CLI entry point with analyze and run commands
-- `src/server.rs`: MCP server implementation with tool routing
-- `src/analyze.rs`: Frappe application analysis logic
-- `src/functools/`: Function signature and DocType extraction utilities
 
 **Author**: Robin Syihab
